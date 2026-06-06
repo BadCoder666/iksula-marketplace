@@ -1,17 +1,15 @@
 {
   "name": "iksula-marketplace",
-  "owner": {
-    "name": "Iksula"
-  },
+  "owner": { "name": "Iksula" },
   "metadata": {
     "description": "Internal Iksula skill & agent marketplace. Subscribe once to receive the firm's standard-compliant skills and their updates.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "iksula-agents",
       "source": "./plugins/iksula-agents",
-      "description": "The four commercial-pipeline agents: vertical-process-mapping, solutions-architect-create, thought-leadership, content-creator."
+      "description": "Six agentic-org agents across Product/Offering + Commercial: vertical-process-mapping, solutions-architect-create, research-solutions, thought-leadership, content-creator, media-planner. All read/write the shared Brain."
     }
   ]
 }
