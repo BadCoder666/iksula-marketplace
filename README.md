@@ -13,7 +13,7 @@ through Cowork's plugin system. No re-sharing files.
 1. Add the marketplace (one time):
 
    ```
-   /plugin marketplace add <git-url-of-this-repo>
+   /plugin marketplace add https://github.com/BadCoder666/iksula-marketplace.git
    ```
 
 2. Install the plugin from the `/plugin` menu, or:

@@ -175,10 +175,11 @@ re-sharing files.
 
 **To subscribe and install (each colleague, once):**
 
-1. Get the marketplace repo URL from DJ (the internal git remote).
+1. The marketplace repo is `https://github.com/BadCoder666/iksula-marketplace.git`
+   (private — ask DJ to add your GitHub account as a collaborator first).
 2. Add the marketplace:
    ```
-   /plugin marketplace add <repo-url>
+   /plugin marketplace add https://github.com/BadCoder666/iksula-marketplace.git
    ```
 3. Install the plugin:
    ```
