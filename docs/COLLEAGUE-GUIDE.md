@@ -401,3 +401,54 @@ else's.
 - The `Agentic Org` folder — the vision doc, Brain-Spine contract, build tracker (living status),
   go-live runbook, and the per-Hand thin mandates and Brain-aware drafts.
 - DJ — for Drive access, the marketplace URL, gate-owner assignments, and merges.
+
+---
+
+## 6. Posting to Slack as iKshana
+
+**iKshana** is the Agentic Org's Slack identity — the bot that posts updates, results, and
+human gates into `#agentic-org-requests`. A small helper, `slack_poster.py`, lets any skill
+post as iKshana by calling `post_to_slack(channel, text)`. To use it on your Mac you store the
+bot token once in your **Keychain** (encrypted at rest), then install two Python packages.
+
+**Prerequisites:**
+
+- You're a member of `#agentic-org-requests` (ask DJ to add you).
+- Get the **iKshana Bot User OAuth Token** from DJ via a secure channel (password manager / AirDrop)
+  — **never** over Slack, email, or committed to this repo. If you have app access yourself, copy it
+  from api.slack.com/apps → iKshana → OAuth & Permissions using the **Copy** button next to
+  **Bot User OAuth Token**. Use the button — selecting it by hand truncates it.
+
+**Three commands (macOS):**
+
+```bash
+# 1) Store the token in your Keychain (paste with Cmd-V at the prompt, twice)
+security add-generic-password -U -a "$USER" -s IKSHANA_SLACK_BOT_TOKEN -w
+
+# 2) Load it in every shell + this one
+echo 'export IKSHANA_SLACK_BOT_TOKEN=$(security find-generic-password -a "$USER" -s IKSHANA_SLACK_BOT_TOKEN -w)' >> ~/.zshrc && source ~/.zshrc
+
+# 3) Install deps and send a test post (adjust the path to your iKshana folder)
+pip3 install --user --break-system-packages slack_sdk python-dotenv && python3 "/path/to/Iksula_Strategy/Services/iKshana/slack_poster.py" "#agentic-org-requests"
+```
+
+Success = `Posted. ts = …` in Terminal and a 👋 message in `#agentic-org-requests`.
+
+**Troubleshooting:**
+
+- `invalid_auth` → the token is wrong or got clipped on copy. Check its length with
+  `printf %s "$IKSHANA_SLACK_BOT_TOKEN" | wc -c` — a full token is ~55+ chars; if it's far shorter,
+  re-copy with the **Copy** button and re-run command 1.
+- `not_in_channel` → run `/invite @iKshana` in that channel (or ask DJ to add the bot).
+- `externally-managed-environment` on pip → the `--user --break-system-packages` flags above handle it.
+
+**Using it from a skill:**
+
+```python
+from slack_poster import post_to_slack
+post_to_slack("#agentic-org-requests", "Vertical mapping for Logistics is ready ✅")
+```
+
+Threaded replies and Block Kit are supported — see the README in the `iKshana` folder. The token is
+a single shared app credential; rotating it (DJ regenerates in Slack) means everyone re-runs
+command 1. Longer term it moves behind the Agent SDK service so it isn't copied onto every laptop.
