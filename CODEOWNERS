@@ -1,0 +1,25 @@
+# CODEOWNERS — Tier 2 skill / vertical owners
+# GitHub/GitLab auto-requests the listed owner as a reviewer on any PR
+# that touches the matching path. Owners review their own skill for
+# correctness; a Tier-1 maintainer (see CONTRIBUTING.md) still merges.
+#
+# Syntax: <path>   <@owner-handle>
+# Add an owner line when a skill gets a dedicated steward. Until then,
+# the default owner below covers everything.
+
+# Default owner for the whole repo (fallback)
+*                                                          @BadCoder666
+
+# Governance & manifests — keep with maintainers
+/CONTRIBUTING.md                                           @BadCoder666
+/.claude-plugin/marketplace.json                           @BadCoder666
+/plugins/iksula-agents/.claude-plugin/plugin.json          @BadCoder666
+
+# Per-skill owners — assign as colleagues take stewardship
+/plugins/iksula-agents/skills/vertical-process-mapping/    @BadCoder666
+/plugins/iksula-agents/skills/solutions-architect-create/  @BadCoder666
+/plugins/iksula-agents/skills/thought-leadership/          @BadCoder666
+/plugins/iksula-agents/skills/content-creator/             @BadCoder666
+
+# Example — when a colleague owns a future Staffing Services skill:
+# /plugins/iksula-agents/skills/staffing-services/         @their-handle
