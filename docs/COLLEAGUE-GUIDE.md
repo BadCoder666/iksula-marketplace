@@ -331,9 +331,21 @@ When a Hand reaches a gate, the Spine posts to the private Slack channel
 **`#agentic-org-requests`**, @mentioning the owner, with an asset summary and the decision needed.
 The owner replies in-thread — **✅ approve · ✍️ revise: \<note\> · ⏸ hold: \<reason\>** — and the
 conductor reads the reply and either releases the next step, re-runs the Hand with the note, or
-pauses. Every decision is logged in the run record with who decided and when. There are six gates
-across the two loops (vertical/solution choice, deck accuracy, TL voice, distribution brief, media
-budget, SQL acceptance).
+pauses. Every decision is logged in the run record with who decided and when.
+
+The six gates and their owners (as of 6 Jun 2026):
+
+| # | Gate | Owner(s) |
+|---|------|----------|
+| 1 | Vertical / solution to productize | DJ, Abhishek Jain |
+| 2 | Solution-deck accuracy | DJ, Abhishek Jain (more added per solution) |
+| 3 | Thought-leadership voice | DJ |
+| 4 | Distribution brief | _to assign_ |
+| 5 | Media plan + budget | _to assign_ |
+| 6 | SQL acceptance | _to assign_ |
+
+Gates 4–6 are assigned as the Commercial Hands (Media Planner, Growth Hacker, Lead Gen) come
+online. Whoever owns a gate must be a member of `#agentic-org-requests`.
 
 > **Current status (6 Jun 2026):** the Brain is seeded, the four marketplace skills' Brain-aware
 > rewrites are drafted and awaiting gated install (content-creator first, as canary), the Spine is
