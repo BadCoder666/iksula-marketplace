@@ -1,7 +1,7 @@
 {
   "name": "iksula-agents",
-  "version": "0.2.0",
-  "description": "Iksula's agentic-org skills across the Product/Offering and Commercial streams: vertical-process-mapping, solutions-architect-create, research-solutions, thought-leadership, content-creator, media-planner. Productizes diagnosed opportunities into sellable solutions and runs coordinated, multi-channel content and distribution — all reading and writing the shared Brain.",
+  "version": "0.3.0",
+  "description": "Iksula's agentic-org skills across the Product/Offering and Commercial streams: vertical-process-mapping, solutions-architect-create, research-solutions, thought-leadership, content-creator, media-planner, and pranaam — the session bootstrap that connects a Claude instance to the shared Brain. Productizes diagnosed opportunities into sellable solutions and runs coordinated, multi-channel content and distribution — all reading and writing the shared Brain.",
   "author": { "name": "Iksula" },
   "keywords": ["iksula", "b2b", "go-to-market", "content", "solutions", "process-mapping", "research", "media-planning"]
 }
