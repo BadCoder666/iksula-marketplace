@@ -27,14 +27,17 @@ When maintainers publish a new version, you receive it through the same subscrip
 ## What's inside
 
 ### `iksula-agents` plugin
-The four commercial-pipeline agents:
+The agentic-org skills (Product/Offering + Commercial):
 
 | Skill | What it does |
 |-------|--------------|
 | `vertical-process-mapping` | Maps an industry vertical's functions (L1/L2/L3) and scores post-LLM automation opportunities into a 6-tab workbook + solution roadmap. |
 | `solutions-architect-create` | Turns a diagnosed opportunity into a packaged, sellable solution — intro deck + client pitch deck. |
+| `research-solutions` | Deep-dives a shortlisted opportunity (market sizing, competitor teardown, buyer evidence) and writes competitive intel back to the Brain. |
 | `thought-leadership` | Produces opinion-led, bylined thought-leadership articles that build authority with senior buyers. |
 | `content-creator` | The central content engine — atomizes a hero asset into a multi-format, multi-channel campaign + publishing calendar. |
+| `media-planner` | Turns a hero asset into a distribution brief and a costed media plan across channels. |
+| `pranaam` | Session bootstrap — connects this Claude instance to the iKshana Brain/Spine and loads the operating rules, so every later skill reads the Brain on demand. |
 
 ## Governance
 
