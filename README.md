@@ -37,6 +37,8 @@ The agentic-org skills (Product/Offering + Commercial):
 | `thought-leadership` | Produces opinion-led, bylined thought-leadership articles that build authority with senior buyers. |
 | `content-creator` | The central content engine — atomizes a hero asset into a multi-format, multi-channel campaign + publishing calendar. |
 | `media-planner` | Turns a hero asset into a distribution brief and a costed media plan across channels. |
+| `growth-hacker` | Executes the publishing calendar on the online/1-to-many channel — publishes native, runs distribution + A/B experiments, drafts voice-governed community replies, captures raw performance to the Brain, and surfaces content-sourced interest to Lead Gen (never qualifies). |
+| `lead-gen` | The one demand-capture funnel across all four channels: capture → de-anonymize (geo-gated) → qualify (MQL→SQL) → nurture → ABM → convert, routing SQLs to Sales (new) or KAM (existing clients), with compliance gates enforced before every send. |
 | `pranaam` | Session bootstrap — connects this Claude instance to the iKshana Brain/Spine and loads the operating rules, so every later skill reads the Brain on demand. |
 
 ## Governance
