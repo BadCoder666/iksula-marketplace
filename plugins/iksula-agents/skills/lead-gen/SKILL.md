@@ -85,6 +85,7 @@ Before every outbound (email or 1-to-1 DM), in this order: (a) **lawful-basis si
 - Use `${CLAUDE_PLUGIN_ROOT}` for intra-plugin paths; never hardcode absolute paths or Drive folder IDs (resolve the Brain at runtime via `brain_io`).
 - Brain writes are append-only, namespaced (`-leadgen-`), aggregate-only, no PII; one writer per namespace; raw-first.
 - Resolve `_brain/` via the `brain_io-howto` **seed file's** `parentId` (a folder-name search returns empty on this connector); read with `download_file_content`, **never** `read_file_content` (it corrupts CSV).
+- **CRM / system-of-record = Zoho CRM** (US data center, org `29004087`), reached via the native Zoho MCP server. It holds the durable per-prospect state the append-only Brain cannot — contact/account record, suppression flags, live scores, lifecycle. Resolve fields/endpoints at runtime; never hardcode org IDs or API endpoints in copy (mirrors the `brain_io` verbs-not-paths rule). The verified field-level bindings (consent gate, opt-out flags, ECS suppression union, lifecycle, geo) are in `references/seam-and-compliance.md` §6.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/references/scoring-framework.md` — the full lead-qualification & scoring framework: two-axis fit×intent gate, A/B/C/D bands, buying-group roll-up, time-decay, negative scoring & reason codes, tiering, speed-to-lead routing, calibration/governance, and the `<<PLACEHOLDER>>` register (founder-supplied values; never hardcode).

@@ -2,6 +2,8 @@
 
 *Lead Gen's companion to the Growth Hacker's `seam-contract.md`. Same object, same fields, same Spine-not-Brain rule — read from the consume side — plus the Lead-Gen-owned enforcement (geo-gate, lawful basis, suppression scrub, routing). If this and the GH `seam-contract.md` ever disagree, they are wrong; re-sync them.*
 
+> **CRM = Zoho CRM** (US DC, org `29004087`), the system-of-record for the mutable per-prospect state. The generic "CRM" references below resolve to it; the verified field-level bindings are in **§6**.
+
 ---
 
 ## 1. The seam object — `content-sourced-lead` (GH → Lead Gen)
@@ -57,3 +59,31 @@ These are DJ's hard lines. Lead Gen owns enforcement; the gates run **synchronou
 - **Resolve `_brain/` via a SEED FILE's `parentId`, not a folder-name search.** A search for a folder titled `_brain` returns **empty** on this connector. Instead `search_files: title contains 'brain_io-howto'` → take the newest result's `parentId` → that **is** the `_brain/` folder; reuse it. (The live `brain_io-howto` is authoritative for the exact IDs/recipe.)
 - **Read feeds with `download_file_content`, NEVER `read_file_content`** — the latter reformats/escapes and **corrupts CSV**. Pick the newest module file by `modifiedTime` (same-day revisions carry a `-vN` suffix).
 - Append-only; namespace this skill's writes `-leadgen-`; raw-first to `_brain/_raw/`.
+
+---
+
+## 6. Zoho CRM field bindings (the system-of-record)
+
+*Verified against the live Iksula production org (US DC, org `29004087`) on 2026-06-09. The CRM is mature and organically grown — match on the specific field/API name, never on raw display strings, and treat unmapped values as fail-closed where a gate depends on them.*
+
+**Already present — reuse as-is (the agent reads these; do not rename/delete):**
+
+| Gate / function | Zoho binding | Rule |
+|---|---|---|
+| **Lawful-basis gate** | `Data_Processing_Basis` (Leads + Contacts) | Permit send only when value ∈ {`Legitimate Interests`, `Contract`, `Consent - Obtained`}. {`Consent - Pending`, `Consent - Waiting`, `Consent - Not Responded`} → `ON_HOLD`. |
+| **DNC / opt-out (`<<DNC_SOURCE>>`)** | `Leads.Email_Opt_Out` (standard) **and** `Contacts.Email_Opt_out1` (custom api_name) — bind **per module** | Hard-block send when the module-appropriate boolean = true. `Unsubscribed_Mode` is the opt-out *reason* (audit only), never the gate. |
+| **Existing-client suppression + KAM routing (`<<SUPPRESSION_CUSTOMER_SRC>>`)** | OR-union: `Contacts.Customer_Type ∈ {EC, Past}` · `Contacts.Contact_Type1 = Customer` · `Customer_Classification ∈ {ECN, ECS, ECH}` (Contacts/Accounts) · linked `Account.Customer_Type ∈ {EC, ECS}` · linked `Deal.Type ∈ {Existing Business (ECS), New Business in Existing (ECN)}` | Any hit → suppress cold + route **KAM**. Eligible-cold cohort = `Customer_Type ∈ {Prospect, Suspect}` / `Deals.Type = New Business (NC)`. **"ECS" is overloaded** (a tier in `*_Classification`, a relationship type in `Customer_Type`/Deals) — match by field. |
+| **Lifecycle (mid/late)** | `Contacts.Contact_Type1` (already has `MQL`, `SQL`, `Customer`); `Deals.Stage` | `OPPORTUNITY` is **derived** from an open linked Deal (`Stage` ∈ open set), not stored. `CUSTOMER` = `Deals.Stage = Closed Won` (authoritative), cascaded to `Contact_Type1 = Customer`. |
+| **Geo gate** | canonical `Accounts.Region` {`INDIA`, `AMERICAS`, `MENA`, `ASEAN`, `ROW`, `EUROPE`} | **`AMERICAS` ≠ US** → US-only person-level de-anon also needs a country check (e.g. `Region1 = USA`). Prohibit when region ∈ {`EUROPE` (GDPR), `INDIA` (DPDP)}. **Fail-closed** on the messy `Leads.Region_Geography` until normalized. |
+| **Enrichment state** | `Enrich_Status__s` (`Available`/`Enriched`/`Data not found`) | Feeder signal → derive `ENRICHING` lead status. |
+
+**To be created by Vishal (see `Zoho CRM Config for Lead-Gen Agent - 260609`) — bind the exact API names once they exist:**
+
+| Vocabulary | New Zoho field |
+|---|---|
+| Lead Status (NEW…SUPPRESSED) | `Leads.LG_Lead_Status` (agent-owned, parallel to the SDR-owned standard `Lead_Status`). |
+| DQ/Recycle reason codes (`DQ_*`/`RC_*`) | `Leads.LG_Disqualify_Recycle_Reason`. (Do **not** key DQ off `Deals.Lost_Reason` — that's opportunity-level.) |
+| Buyer Role (Economic Buyer…Gatekeeper) | `Contacts.Buyer_Role` — **but first verify native Deals Contact Roles in Setup** (API can't see it); native roles are the correct per-deal home. Lossy conversion heuristics only: `Are_we_connected_to_Decision_Maker=Yes → Economic Buyer`, `_Influencer=Yes → Influencer`, `_Recommender=Yes → Champion`. |
+| SAL lifecycle stage | add value `SAL` to `Contacts.Contact_Type1`. |
+
+> **Standard `Leads.Lead_Status` is ACTIVE / SDR-owned** (`Fresh`/`Contacted`/`Qualified Lead`/`Meeting Scheduled`/`Junk`…) — never silently repurpose it. Whether to keep the funnel split (agent `LG_Lead_Status` ∥ SDR `Lead_Status`, synced at hand-offs) or unify onto one spine is the open DJ + Vishal decision.

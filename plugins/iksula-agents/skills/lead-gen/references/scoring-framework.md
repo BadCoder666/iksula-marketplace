@@ -319,8 +319,8 @@ Fit-grade distribution (watch A/B/C/D inflation) · Engagement distribution + **
 | `<<DQ_GEO_LIST>>` | Hard-DQ geographies | (out-of-scope regions) |
 | `<<DQ_COMPETITOR_DOMAINS>>` | Competitor/agency/job-seeker blocklist | (named rival agencies) |
 | `<<DQ_SIZE_FLOOR>>` | Minimum size/GMV to qualify | < ₹10Cr GMV → DQ |
-| `<<DNC_SOURCE>>` | Do-not-contact source of truth | global suppression list ID |
-| `<<SUPPRESSION_CUSTOMER_SRC>>` | Existing-customer / open-opp suppression | CRM customer + open-opp lists |
+| `<<DNC_SOURCE>>` | Do-not-contact source of truth | **Resolved → Zoho (per-module booleans, match by field):** `Leads.Email_Opt_Out` (standard) + `Contacts.Email_Opt_out1` (custom api_name). `Unsubscribed_Mode` is opt-out *reason*/audit only, never the gate. |
+| `<<SUPPRESSION_CUSTOMER_SRC>>` | Existing-customer / open-opp suppression | **Resolved → Zoho OR-union (match by field — "ECS" is overloaded):** `Contacts.Customer_Type ∈ {EC, Past}` OR `Contacts.Contact_Type1 = Customer` OR `Customer_Classification ∈ {ECN, ECS, ECH}` (Contacts/Accounts) OR linked `Account.Customer_Type ∈ {EC, ECS}` OR linked `Deal.Type ∈ {Existing Business (ECS), New Business in Existing (ECN)}`. Eligible-cold cohort = `Customer_Type ∈ {Prospect, Suspect}` / `Deals.Type = New Business (NC)`. |
 | `<<CATCHALL_POLICY>>` | Catch-all risk-acceptance policy | exclude from primary pool; micro-test only |
 | `<<RW_ECONOMIC_BUYER>>` … `<<RW_GATEKEEPER>>` | Buying-role roll-up weights | EB 1.0 / Champion 0.8 / Influencer 0.5 / End-User 0.3 / Blocker -0.4 |
 | `<<REQUIRED_ROLES>>` / `<<MIN_COMMITTEE_COVERAGE>>` | Roles needed + min coverage for MQL | {EB, Champion} required; coverage ≥ 0.5 |
