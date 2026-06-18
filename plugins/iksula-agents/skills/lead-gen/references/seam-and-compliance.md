@@ -81,9 +81,9 @@ These are DJ's hard lines. Lead Gen owns enforcement; the gates run **synchronou
 
 | Vocabulary | New Zoho field |
 |---|---|
-| Lead Status (NEW…SUPPRESSED) | `Leads.LG_Lead_Status` (agent-owned, parallel to the SDR-owned standard `Lead_Status`). |
+| Lead Status (NEW…SUPPRESSED) | `Leads.LG_Lead_Status` (agent-owned). The standard `Lead_Status` is **empty** (0/130,612) so it's free — but keep the agent field separate; the live SDR disposition is `Conversation_Status` / `Meeting_options`, not `Lead_Status`. |
 | DQ/Recycle reason codes (`DQ_*`/`RC_*`) | `Leads.LG_Disqualify_Recycle_Reason`. (Do **not** key DQ off `Deals.Lost_Reason` — that's opportunity-level.) |
 | Buyer Role (Economic Buyer…Gatekeeper) | `Contacts.Buyer_Role` — **but first verify native Deals Contact Roles in Setup** (API can't see it); native roles are the correct per-deal home. Lossy conversion heuristics only: `Are_we_connected_to_Decision_Maker=Yes → Economic Buyer`, `_Influencer=Yes → Influencer`, `_Recommender=Yes → Champion`. |
 | SAL lifecycle stage | add value `SAL` to `Contacts.Contact_Type1`. |
 
-> **Standard `Leads.Lead_Status` is ACTIVE / SDR-owned** (`Fresh`/`Contacted`/`Qualified Lead`/`Meeting Scheduled`/`Junk`…) — never silently repurpose it. Whether to keep the funnel split (agent `LG_Lead_Status` ∥ SDR `Lead_Status`, synced at hand-offs) or unify onto one spine is the open DJ + Vishal decision.
+> **Standard `Leads.Lead_Status` is EMPTY** — re-verified 2026-06-09 by direct COQL: **0 of 130,612** records populated (the field exists but is unused). The live SDR disposition signal is `Conversation_Status` + `Meeting_options` + native Zia Score, not `Lead_Status`. So on Leads it is effectively free real estate; the agent still uses a clearly-scoped `LG_Lead_Status` to avoid any collision. Whether to keep the funnel split (agent `LG_Lead_Status` parallel to the SDR disposition fields) or unify onto one spine is the open DJ + Vishal decision.

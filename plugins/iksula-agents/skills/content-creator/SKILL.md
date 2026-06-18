@@ -8,9 +8,10 @@ description: >-
   follow-up posts", "make the publishing calendar", "what should we post", or points at a hero asset and
   asks for derivative posts, carousels, threads, blog editions, email, podcast/video briefs, or research
   briefs. Also maintains two standing research registers (Top 100 Voices, Top Content) scored by a B2B
-  influence-weighting formula, and ships a monthly Influence Analysis. Consumes inputs delivered by the
-  Growth Hacker (TL article + editorial log, solution intro-deck handoff, competitor list, audience
-  signals, prior performance data) and hands the calendar back to the Growth Hacker for publishing.
+  influence-weighting formula, and ships a monthly Influence Analysis. Inputs arrive via the Spine (the
+  TL article + editorial log from Thought Leadership; the Distribution Brief from the Media Planner;
+  competitor / audience / prior-performance signals from the Brain); hands the finished calendar +
+  asset bundle to the Spine for the Growth Hacker to publish.
 ---
 
 # Content Creator (Iksula central content engine)
@@ -21,7 +22,7 @@ This skill plays Iksula's **master content creator** — the atomization, planni
 
 It runs as **one central engine for all of Iksula**, not per-solution. It is **B2B** throughout — optimised for resonance with a narrow, high-value ICP, never B2C-style mass engagement.
 
-> **Vertical Process Mapping** → **Solution Architect** → **Thought Leadership** → **Content Creator** *(this skill)* → **Growth Hacker** (publishes) / **Lead-Gen** (email).
+> **Vertical Process Mapping** → **Solution Architect** → **Thought Leadership** → **Media Planner** *(brief)* → **Content Creator** *(this skill)* → **Media Planner** *(plan)* → **Growth Hacker** (publishes) → **Lead-Gen**.
 
 It **packages, it does not re-argue**: it never rewrites a thesis, invents proof, or publishes. The full governing spec is `references/mandate.md` — read it before every run.
 
@@ -35,7 +36,7 @@ Trigger when the user wants the multi-format content campaign + calendar built a
 
 Two kinds — confirm at intake; **never fabricate, stop and ask if missing.**
 
-**Per-cycle creative inputs (delivered by the Growth Hacker):**
+**Per-cycle creative inputs (arrive via the Spine — produced upstream by Thought Leadership + the Media Planner brief):**
 - The latest **thought-leadership article** + the **editorial log**.
 - The relevant **solution intro-deck handoff section(s)** — scope, value metrics, segments, key messages, approved proof points.
 - The **competitor list** (radar for what *not* to echo).
@@ -90,3 +91,4 @@ Write like a sharp B2B operator, not a marketer. Lead with the buyer's reality a
 - `references/mandate.md` — the full governing mandate (authoritative spec).
 - `references/registers-and-weighting-playbook.md` — build/maintain the two registers, the influence-weighting formula, quarterly recalibration, and the monthly Influence Analysis.
 - `references/content-build-spec.md` — the format × channel × message rubric, funnel lens, voice-governance routing, the calendar schema, and per-product build checklists.
+- `references/seam-contract.md` — the Content Creator → Growth Hacker `publishing-calendar` handoff contract (boundary, field ownership, idempotency, Spine-not-Brain).

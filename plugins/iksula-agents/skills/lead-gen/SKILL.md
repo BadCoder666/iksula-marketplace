@@ -10,7 +10,8 @@ description: >-
   de-anon, lawful-basis sign-off, synchronous suppression scrub, never cold-email an existing client,
   Reference bypasses MQL, CTOR over CTR). Trigger: "run lead gen", "qualify these leads", "score this
   lead", "build the nurture sequence", "work the content-sourced leads", "de-anonymize the visitors",
-  "book the meeting / hand off the SQL", "run the ABM play", "draft the outreach".
+  "book the meeting / hand off the SQL", "run the ABM play", "draft the outreach", "stage the
+  campaign", "build the Woodpecker sequence", "load the leads into Woodpecker".
 ---
 
 # Lead Gen & Qualification (demand-capture engine — Brain-aware)
@@ -43,6 +44,7 @@ Turns demand into Sales-ready meetings. One funnel, every channel: capture → q
 | Funnel data (→ Brain) | `performance-analytics-leadgen-YYMMDD` (append, namespaced) | MQL→SQL→meeting conversion by channel / account / `audience_type`. Aggregate-only; no PII. |
 | Scoring config (proposed) | versioned config object (.md / .json) | Fit weights, grade bands, signal points, decay, thresholds — all `<<PLACEHOLDER>>` until the founder/Vishal ratify; any change is versioned + human-approved. |
 | Outreach drafts | per-row copy (.md) | 1-to-1 personalised email/LinkedIn drafts, grounded in citable facts. Drafted, never auto-sent at scale — first-send is human-gated. |
+| Sending-stack campaigns (staged) | Woodpecker linear campaigns + steps; Mailerlite lists | Built/refreshed via the Woodpecker MCP/v2 API to Vishal's sequence spec; only lawful-basis-cleared leads enrolled; **send-mode OFF — left paused, first send human-triggered.** Branch on click/reply only (never opens). See `references/sending-stack.md`. |
 
 ## Workflow
 
@@ -58,6 +60,8 @@ Sequential phases; show your work; do not skip ahead. Persona: a disciplined Rev
 
 5. **Nurture (draft) & ABM orchestrate.** For the not-yet-ready, build multi-touch, behaviour-triggered sequences from Demand Gen content; re-score as engagement builds; recycle right-fit-not-now (`RECYCLED`, reason-coded) and require a fresh trigger — not time — to re-promote. **CTOR over CTR**, and **control for audience type (new vs retargeting) before reading any email result** — new-audience outreach outperforms retargeting; reading them together lies. For ABM, read account-level intent (opens, clicks, CTOR) and coordinate role-tailored touches against target accounts.
 
+5b. **Stage into the sending stack (build, don't send).** When a cleared segment exists and a sequence spec is defined, **build/refresh the campaigns and enroll the leads** in the execution stack — **Woodpecker** for cold 1-to-1, **Mailerlite** for opted-in nurture/broadcast — via the Woodpecker MCP/v2 API. Only lawful-basis-cleared leads are enrolled; campaigns are left **PAUSED with send-mode OFF** (first send human-triggered). Woodpecker's branching is 1-condition-only, so rich activity-branching is **multi-campaign routing** handled by the always-on Router (infra, outside this agent) — branch on **clicks/replies only, never opens**. Full execution contract + hard stops: `${CLAUDE_PLUGIN_ROOT}/references/sending-stack.md`.
+
 6. **Convert & route — GATE (SQL acceptance).** Lead-to-account match runs **first** (route to the account owner, never random round-robin). Book the meeting and package the SQL context pack (committee map, fit "why", intent signals, "why now"). Route **by account status**: new/target → Sales / New Client Acquisition; existing ECS → **KAM as an expansion signal, never a cold pitch**. The agent **cannot self-certify an SQL** — the receiving owner (Sales or Account Lead) accepts it as real pipeline (the human gate).
 
 7. **Feed the Brain & hand off.** Write the funnel aggregates to `performance-analytics-leadgen-YYMMDD` (raw-first; aggregate-only; no PII). Confirm the Spine writes (qualified-pipeline, CRM lifecycle updates, ABM plan, seam ACKs). Surface drift (low MQL→SAL acceptance) as a recalibration trigger; propose any scoring-config change versioned, for human approval.
@@ -65,6 +69,8 @@ Sequential phases; show your work; do not skip ahead. Persona: a disciplined Rev
 ### Pre-send guardrail (runs before ANY send — synchronous, non-negotiable)
 
 Before every outbound (email or 1-to-1 DM), in this order: (a) **lawful-basis sign-off** present for this contact/region; (b) **synchronous suppression scrub** against the canonical suppression store — block unsubscribe/DNC, opt-outs, competitors, **and any existing client / open opp** (never cold-email a current client; route ECS → KAM); (c) **geo-gate** re-checked (person-level only for US; company-level for EU/India/non-US); (d) for the **first send of any new sequence**, explicit **human approval**. Any check fails → hold (`ON_HOLD`), do not send. In the pilot the agent **proposes/drafts**; a human approves the send — it does **not** autonomously send at scale.
+
+> **Enrolling ≠ sending.** Building a Woodpecker/Mailerlite campaign and enrolling leads is *staging* and runs these same four checks at enroll time — but the campaign is then left **PAUSED, send-mode OFF**. Nothing leaves until a human triggers the first send. The agent never flips send-mode on or auto-runs a campaign at scale.
 
 ## Operating principles
 - **Qualify once, consistently** — one funnel every channel feeds; never four incompatible funnels.
@@ -86,9 +92,11 @@ Before every outbound (email or 1-to-1 DM), in this order: (a) **lawful-basis si
 - Brain writes are append-only, namespaced (`-leadgen-`), aggregate-only, no PII; one writer per namespace; raw-first.
 - Resolve `_brain/` via the `brain_io-howto` **seed file's** `parentId` (a folder-name search returns empty on this connector); read with `download_file_content`, **never** `read_file_content` (it corrupts CSV).
 - **CRM / system-of-record = Zoho CRM** (US data center, org `29004087`), reached via the native Zoho MCP server. It holds the durable per-prospect state the append-only Brain cannot — contact/account record, suppression flags, live scores, lifecycle. Resolve fields/endpoints at runtime; never hardcode org IDs or API endpoints in copy (mirrors the `brain_io` verbs-not-paths rule). The verified field-level bindings (consent gate, opt-out flags, ECS suppression union, lifecycle, geo) are in `references/seam-and-compliance.md` §6.
+- **Execution / sending stack = Woodpecker (cold 1-to-1) + Mailerlite (opted-in nurture/broadcast)**, reached via the Woodpecker MCP (`Woodpeckerco/woodpecker-mcp-server`) / v2 REST. The agent **builds + stages** campaigns; **send-mode is OFF by default** (enroll ≠ send; campaigns left paused, first send human-triggered). Rich branching = multi-campaign routing via the always-on Router (infra, outside this skill); branch on **clicks/replies only, never opens**. Full contract + hard stops: `references/sending-stack.md`. Never hardcode API keys/endpoints; the Woodpecker API add-on must be confirmed active.
 
 ## Resources
 - `${CLAUDE_PLUGIN_ROOT}/references/scoring-framework.md` — the full lead-qualification & scoring framework: two-axis fit×intent gate, A/B/C/D bands, buying-group roll-up, time-decay, negative scoring & reason codes, tiering, speed-to-lead routing, calibration/governance, and the `<<PLACEHOLDER>>` register (founder-supplied values; never hardcode).
 - `${CLAUDE_PLUGIN_ROOT}/references/vocabularies.md` — the closed controlled vocabularies all CRM fields/queues/events bind to: Lifecycle Stages, Lead Statuses + reason codes + reply-classes, Channels (with autonomy defaults), Automation Archetypes, Value Levers, Buyer Roles, Autonomy Levels, Reusability tiers, and their cross-binding.
 - `${CLAUDE_PLUGIN_ROOT}/references/seam-and-compliance.md` — the `content-sourced-lead` seam payload (`correlation_id`, `contact_identity`, `source_asset_ref`, `source_channel`, `intent_signal`, `region`, `lawful_basis_tag`, `consent_context`, `ack_status`…), idempotent-consume + canonical-key resolution rules, and the compliance playbook (geo-gated de-anon, lawful-basis sign-off, synchronous suppression scrub, existing-client/ECS routing, pilot human-gating).
+- `${CLAUDE_PLUGIN_ROOT}/references/sending-stack.md` — the execution layer: tool split (Woodpecker cold / Mailerlite opted-in / Zoho state), Woodpecker's constraints (1-condition branching, gated API), the multi-campaign Router branching model, the agent's build-and-stage job with its hard stops, the **send-mode-OFF** gate, and the safe pilot path.
 - Live contracts (authoritative — read, don't duplicate): `brain_io-howto` in `_brain/`; the `_spine-howto` and the `content-sourced-lead` queue/table in `_spine/`.
