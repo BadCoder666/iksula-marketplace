@@ -100,3 +100,5 @@ Router rules (the agent does **not** run these — it documents them, and its le
 6. Prove deliverability (bounce <2%, spam <0.3%), then widen.
 
 *Full background: the Woodpecker connector brief and the multi-campaign routing design (team docs, 260618). Connector verified + account inventory: `woodpecker_smoke.sh` (read-only).*
+
+**Runnable enforcement of this contract:** the iksula-agents plugin's `tools/leadgen/` package makes these rules structural — `presend_gate.evaluate()` (the pre-send/enroll wall), `wp_client.WoodpeckerClient` (create-only; no `/run` verb; HTTP allow-listed to list+create), `merge_preview` (token-leak check), `ledger` (ownership = id in the ledger), `audit`. Call it; never hand-roll the checks. Tests (run from `tools/`): `python -m unittest leadgen.tests.test_safety`.

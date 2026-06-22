@@ -76,3 +76,7 @@ This payload is **per-prospect, mutable-on-consume, PII-bearing**, and feeds **d
 ## 7. Pilot reality
 
 The conductor isn't live. In the pilot, GH **writes the seam record by convention** and an operator / Lead Gen polls the Spine queue; real outbound is human-gated. The skill **proposes and drafts** — it does not autonomously qualify or send. Aggregate counts to the Brain are fine; lead rows stay in the Spine/CRM.
+
+---
+
+**Runnable enforcement:** the iksula-agents plugin's `tools/growthhacker/seam_emitter.py` implements this contract — ULID idempotency, region → `lawful_basis_tag` (fail-safe to company-level for non-US), recursive rejection of any score/grade/MQL/ack/account-status field (incl. nested in `intent_signal`/`contact_identity`), `ack_status` left null, Spine-only (never the Brain). Use `seam_emitter.emit(event)`; never hand-build the record. Tests (from `tools/`): `python -m unittest growthhacker.tests.test_safety`.
