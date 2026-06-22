@@ -11,6 +11,26 @@ Fully self-contained. Follow the steps in order. Two hard rules:
 
 ---
 
+## PART A — The Agent's Mandate
+
+**What this skill is for.** Produce a CEO-ready diagnostic audit of a Magento / Adobe Commerce (or other) e-commerce site — measured, evidence-based, and packaged as a presentable report. It diagnoses; it does not implement.
+
+**Scope (what it owns).** The five audit dimensions (Business & Conversion, CX & Merchandising, Technology & Platform Health, Operations & Risk, Growth & Value-Add); measuring performance (PageSpeed Insights) and security (response headers) from the URL; gathering evidence from whatever access is provided; validating every recommendation against the live site; scoring each dimension 1–5 with a stated confidence/basis; and generating the report deck plus a Data Request Pack for gaps.
+
+**Out of scope.** Writing the fixes it recommends (that is the **`magento2-coding`** skill's job), and any go-to-market / research / content work owned by the eleven agentic-org skills. No scope overlap.
+
+**Place in the org model (Brain / Hands / Spine).** A **Hands** skill — diagnostic/delivery. It is self-contained: it does not read or write the shared Brain. Its output (findings + roadmap) is a clean hand-off point — implementation can flow to `magento2-coding`, and a productized offering can flow to `solutions-architect-create` — but it wires to neither automatically.
+
+**Engagement rule.** Honour the mandatory question gate in STEP 1 (never assume access and proceed silently), and ask the user which folder to save the deck to rather than defaulting (STEP 5).
+
+## PART B — The Deliverables
+
+- **`audit_data.json`** — the structured audit (coverage, `tech_snapshot`, five scored dimensions with findings, risks/blockers/opportunities, roadmap). Shape defined in STEP 4.
+- **A brand-compliant PowerPoint report** — Iksula brand (Carlito, primary red `#9A0D15`, light cards), named `<Client> Audit - YYMMDD.pptx`, saved to a user-chosen folder. Deck flow defined in STEP 5.
+- **A Data Request Pack** — exact retrieval steps + paste-back templates for every source marked *Not assessed*, so the team can supply data for a deeper v2.
+
+---
+
 ## STEP 1 — Ask the user these questions
 
 > **MANDATORY GATE — do not skip.** You MUST ask these questions and WAIT for answers before doing
@@ -315,7 +335,11 @@ A finding object: `{"id":"TECH-01","title":"","category":"","current_state":"","
 ## STEP 5 — Generate the PowerPoint
 1. `python3 -c "import pptx" 2>/dev/null || pip install python-pptx`
 2. Write the **Appendix** Python block verbatim to `/tmp/build_audit_ppt.py`.
-3. `python3 /tmp/build_audit_ppt.py <audit_data.json> <Client>_Audit.pptx`
+3. **Ask the user which folder to save the deck to** — never default silently. Name the file
+   `<Client> Audit - YYMMDD.pptx` (Iksula date-suffix convention; use `v2`/`v3` on same-day re-runs).
+4. `python3 /tmp/build_audit_ppt.py <audit_data.json> "<chosen-folder>/<Client> Audit - YYMMDD.pptx"`
+
+The deck is brand-compliant by construction (the Appendix generator uses Carlito + primary red `#9A0D15` + light cards).
 
 Deck flow: Cover → Basis/coverage → Scorecard → **Performance & security snapshot** → Top 5 risks →
 Top 5 conversion blockers → Top 5 opportunities → Impact/Effort matrix → per-dimension findings →
@@ -340,9 +364,9 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.oxml.ns import qn
 
-INK=RGBColor(0x15,0x15,0x18); RED=RGBColor(0xD8,0x23,0x2A); WHITE=RGBColor(0xFF,0xFF,0xFF)
+INK=RGBColor(0x15,0x15,0x18); RED=RGBColor(0x9A,0x0D,0x15); WHITE=RGBColor(0xFF,0xFF,0xFF)
 LGRAY=RGBColor(0xF4,0xF4,0xF6); MGRAY=RGBColor(0x5E,0x5E,0x66); HAIR=RGBColor(0xDD,0xDD,0xE2)
-AMBER=RGBColor(0xD9,0x8A,0x1F); GREEN=RGBColor(0x2E,0x7D,0x32); FONT="Arial"
+AMBER=RGBColor(0xD9,0x8A,0x1F); GREEN=RGBColor(0x2E,0x7D,0x32); FONT="Carlito"
 
 def score_color(s):
     try: s=float(s)
@@ -384,7 +408,7 @@ def _nb(p): p._p.get_or_add_pPr().append(p._p.get_or_add_pPr().makeelement(qn('a
 def _bu(p,c):
     pPr=p._p.get_or_add_pPr()
     pPr.insert(0,pPr.makeelement(qn('a:buChar'),{'char':'•'}))
-    pPr.insert(0,pPr.makeelement(qn('a:buFont'),{'typeface':'Arial'}))
+    pPr.insert(0,pPr.makeelement(qn('a:buFont'),{'typeface':'Carlito'}))
     cl=pPr.makeelement(qn('a:buClr'),{}); cl.append(cl.makeelement(qn('a:srgbClr'),{'val':'%02X%02X%02X'%(c[0],c[1],c[2])})); pPr.insert(0,cl)
 def para(tf,text,size,color=INK,bold=False,first=False,align=PP_ALIGN.LEFT,sa=6,italic=False,bullet=False,spc=None):
     p=tf.paragraphs[0] if first and not tf.paragraphs[0].runs else tf.add_paragraph()
