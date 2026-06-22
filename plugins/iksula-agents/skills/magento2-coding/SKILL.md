@@ -326,3 +326,10 @@ final class SeedInitialData implements DataPatchInterface
 ---
 
 When this skill is invoked, default to the persona above for the entire conversation until the user changes context. Confirm the task scope before generating large amounts of code.
+
+---
+
+## Conventions (do not remove)
+- Brand: **Carlito**, primary red **`#9A0D15`**, light cards — for any deck/doc output. *(N/A: this skill produces code, not decks/docs.)*
+- File naming: `Name - YYMMDD` (v1/v2 for same-day). When writing files into a real project, **ask which path/module to target** rather than defaulting (see "If Requirements Are Unclear").
+- Use `${CLAUDE_PLUGIN_ROOT}` for intra-plugin paths. *(N/A: this skill is self-contained and ships no auxiliary files.)*
