@@ -52,7 +52,7 @@ jobs:
                 -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" -H 'Content-type: application/json; charset=utf-8' \
                 --data @- | tee /tmp/a.json | jq -e '.ok' >/dev/null || { cat /tmp/a.json; exit 1; }
 
-  # 3) PR merged (live) -> announce to #ikshana-updates with skill name + description
+  # 3) PR merged (live) -> announce to #ikshana-updates ONLY when a real skill changed
   announce-live:
     if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
@@ -62,14 +62,16 @@ jobs:
       - env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           UPDATES_CHANNEL: C0B8HGW3WDR
-          PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           set -euo pipefail
           summary=$(python3 .github/scripts/skill-summary.py "$BASE_SHA" "$HEAD_SHA" || true)
-          [ -z "$summary" ] && summary="*${PR_TITLE}*"
+          if [ -z "$summary" ]; then
+            echo "No skill SKILL.md changed in this PR — skipping #ikshana-updates announcement."
+            exit 0
+          fi
           text=$(printf ':sparkles: *New skill live in the iKshana marketplace*\n%s\n_Install or update it via your marketplace subscription._ %s' "$summary" "$PR_URL")
           jq -n --arg ch "$UPDATES_CHANNEL" --arg t "$text" '{channel:$ch,text:$t}' \
             | curl -sS -X POST https://slack.com/api/chat.postMessage \
