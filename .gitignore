@@ -13,3 +13,7 @@ venv/
 # Local scratch
 /tmp/
 *.log
+
+# Execution toolkit local runtime/scratch (Spine/Brain mirrors, demos)
+_state/
+_demo/
