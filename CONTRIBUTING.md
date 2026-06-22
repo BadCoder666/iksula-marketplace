@@ -35,6 +35,12 @@ Flow for any change: contributor opens a PR → the skill's **owner** reviews fo
 2. Bump `version` in the affected `plugin.json` (semver) and in `marketplace.json`.
 3. Tag the release. Consumers pull the new version through their subscription.
 
+### Approval notifications (automated, via Slack)
+The iKshana bot (GitHub Action `.github/workflows/notify-slack.yml`) sends: a DM to **DJ** when a PR
+opens; a DM to **you** when DJ approves it; and an announcement to **#ikshana-updates** (skill name +
+what it does) when it merges and goes live. Add your `GitHub-login -> Slack-ID` to
+`.github/slack-handles.json` to get your approval DM. Setup: `docs/SLACK-NOTIFY-SETUP.md`.
+
 ## The Iksula skill authoring standard
 
 Every skill in this marketplace MUST follow these conventions. A PR that doesn't meet
