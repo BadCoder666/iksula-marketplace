@@ -22,6 +22,7 @@ def build_enabled():
 WP_BASE = "https://api.woodpecker.co"
 WP_LIST_PATH = "/rest/v1/campaign_list"      # READ (metadata only, no PII)
 WP_CREATE_PATH = "/rest/v2/campaigns"        # CREATE-ONLY (HTTP 201 -> DRAFT)
+WP_ADD_PROSPECTS_PATH = "/rest/v1/add_prospects_campaign"  # enroll INTO A DRAFT only (never sends)
 
 # State-changing verbs the agent must NEVER call, on ANY campaign incl. its own.
 # Stored lowercase; the guard compares item.lower() so casing can't slip past.
@@ -33,7 +34,13 @@ FORBIDDEN_VERBS = frozenset(v.lower() for v in {
 # The ONLY (method, path) pairs the HTTP layer may ever issue. Any other request
 # — including a hand-built status=RUNNING PUT or a /run POST — is refused. This
 # makes "the agent cannot send" an enforced invariant, not a naming convention.
-ALLOWED_HTTP = frozenset({("GET", WP_LIST_PATH), ("POST", WP_CREATE_PATH)})
+# add_prospects only ADDS to a DRAFT (enroll_to_draft re-checks DRAFT/PAUSED first);
+# it cannot send — sending still requires /run, which is not in this set.
+ALLOWED_HTTP = frozenset({
+    ("GET", WP_LIST_PATH),
+    ("POST", WP_CREATE_PATH),
+    ("POST", WP_ADD_PROSPECTS_PATH),
+})
 
 # Non-sending statuses a campaign may be left in / enrolled into.
 NON_SENDING_STATUSES = frozenset({"DRAFT", "PAUSED"})

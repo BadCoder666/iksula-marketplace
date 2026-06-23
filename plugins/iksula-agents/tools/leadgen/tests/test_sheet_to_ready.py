@@ -80,5 +80,41 @@ class SheetToReadyTests(unittest.TestCase):
         self.assertTrue(res["dry_run"])
 
 
+    def test_merge_preview_case_insensitive(self):
+        from leadgen import merge_preview
+        out = merge_preview.validate("Hi {{FIRST_NAME}} at {{COMPANY}}",
+                                     [{"first_name": "Sam", "company": "Acme"}])
+        self.assertTrue(out["clean"])   # {{FIRST_NAME}} resolves a 'first_name' column
+
+    def test_enroll_to_draft_dry_run_and_guards(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"
+        os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc
+        from leadgen.wp_client import WoodpeckerClient, ForbiddenAction
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger2.jsonl")
+        res = s2r.build_draft("[LG-AGENT] sheet test", "779999", "S", "<p>B</p>",
+                              run_id="r", created_at_utc="t", dry_run=True)
+        cid = res["campaign_id"]
+        c = WoodpeckerClient(dry_run=True)
+        en = c.enroll_to_draft(cid, [{"email": "a@x.example", "first_name": "A", "company": "X"}])
+        self.assertEqual(en["enrolled"], 1); self.assertTrue(en["dry_run"])
+        with self.assertRaises(ForbiddenAction):          # foreign campaign
+            c.enroll_to_draft("not-owned", [{"email": "a@x.example"}])
+        os.environ["WOODPECKER_AGENT_BUILD"] = "off"
+        with self.assertRaises(ForbiddenAction):          # kill switch off
+            c.enroll_to_draft(cid, [{"email": "a@x.example"}])
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"
+
+    def test_enroll_endpoint_does_not_open_a_send_path(self):
+        # the add_prospects endpoint is allow-listed, but /run etc. are still blocked
+        from leadgen.wp_client import WoodpeckerClient, ForbiddenAction
+        c = WoodpeckerClient(key="t", dry_run=True)
+        for method, path in (("POST", "/rest/v1/campaigns/1/run"),
+                             ("PUT", "/rest/v2/campaigns/1"),
+                             ("POST", "/rest/v2/campaigns/1/run")):
+            with self.assertRaises(ForbiddenAction):
+                c._http(method, path)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
