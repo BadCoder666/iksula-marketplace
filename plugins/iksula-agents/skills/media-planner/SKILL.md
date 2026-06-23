@@ -44,3 +44,10 @@ performance · thin: own no register, feed the Brain.
 ## Resources
 - `brain_io-howto` (in the Brain `_brain/`) · the hero-asset record in `_spine/` · `references/mandate.md`
   (authoritative spec).
+
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: G4 — distribution brief → owner Vishal Sobti (U0B9NU5E4UF)
+- gate: G5 — media plan + budget (commits spend) → owner Vishal Sobti (U0B9NU5E4UF)
