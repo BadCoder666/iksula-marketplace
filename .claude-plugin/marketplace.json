@@ -3,13 +3,13 @@
   "owner": { "name": "Iksula" },
   "metadata": {
     "description": "Internal Iksula skill & agent marketplace. Subscribe once to receive the firm's standard-compliant skills and their updates.",
-    "version": "0.4.0"
+    "version": "0.7.0"
   },
   "plugins": [
     {
       "name": "iksula-agents",
       "source": "./plugins/iksula-agents",
-      "description": "Nine agentic-org skills across Product/Offering + Commercial: vertical-process-mapping, solutions-architect-create, research-solutions, thought-leadership, content-creator, media-planner, growth-hacker, lead-gen, and pranaam (the session bootstrap that connects an instance to the Brain). All read/write the shared Brain."
+      "description": "Eleven agentic-org skills across Product/Offering + Commercial: vertical-process-mapping, solutions-architect-create, research-solutions, prospect-outreach-research, client-research, thought-leadership, content-creator, media-planner, growth-hacker, lead-gen, and pranaam (the session bootstrap that connects an instance to the Brain). All read/write the shared Brain."
     }
   ]
 }

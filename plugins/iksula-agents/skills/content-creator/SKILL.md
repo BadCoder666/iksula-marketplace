@@ -92,3 +92,9 @@ Write like a sharp B2B operator, not a marketer. Lead with the buyer's reality a
 - `references/registers-and-weighting-playbook.md` — build/maintain the two registers, the influence-weighting formula, quarterly recalibration, and the monthly Influence Analysis.
 - `references/content-build-spec.md` — the format × channel × message rubric, funnel lens, voice-governance routing, the calendar schema, and per-product build checklists.
 - `references/seam-contract.md` — the Content Creator → Growth Hacker `publishing-calendar` handoff contract (boundary, field ownership, idempotency, Spine-not-Brain).
+
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: G7 — content calendar + key messages before distribution → owner Vishal Sobti (U0B9NU5E4UF)

@@ -58,3 +58,9 @@ file name = vertical name only (no date suffix). Confirm the folder before savin
 - `references/function-taxonomy.md` · `references/excel-build-spec.md` · `assets/B2B Distribution.xlsx` ·
   `scripts/build_template.py` · `scripts/recalc.py` *(all unchanged)*.
 - ~~rubric + controlled vocabularies inline~~ → now read from `method-vocab` in the Brain.
+
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: G1 — which solution from the shortlist to productize → owner DJ (U0B0B545G9G) + Abhishek Jain (U078STK5YEN)

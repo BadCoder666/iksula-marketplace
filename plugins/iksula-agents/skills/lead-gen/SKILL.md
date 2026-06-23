@@ -101,3 +101,10 @@ Before every outbound (email or 1-to-1 DM), in this order: (a) **lawful-basis si
 - `${CLAUDE_PLUGIN_ROOT}/references/sending-stack.md` — the execution layer: tool split (Woodpecker cold / Mailerlite opted-in / Zoho state), Woodpecker's constraints (1-condition branching, gated API), the multi-campaign Router branching model, the agent's build-and-stage job with its hard stops, the **send-mode-OFF** gate, and the safe pilot path.
 - **Execution toolkit — runnable enforcement (call it, don't hand-roll):** the iksula-agents plugin's `tools/leadgen/` package (sibling of `skills/`). `leadgen.presend_gate.evaluate()` IS the pre-send/enroll wall (lawful basis · suppression · geo · clean-Sheet-not-raw-Zoho · warmed mailbox · merge-preview · human approval → ALLOW/HALT; today HALT, zero eligible); `leadgen.wp_client.WoodpeckerClient` is **create-only** (no `/run` verb exists; HTTP allow-listed to list+create), with `merge_preview`, `ledger`, `audit`. Dry-run a cohort: `python -m leadgen.preflight`. Kill-switch env `WOODPECKER_AGENT_BUILD`. 24 safety tests; adversarially verified SOUND.
 - Live contracts (authoritative — read, don't duplicate): `brain_io-howto` in `_brain/`; the `_spine-howto` and the `content-sourced-lead` queue/table in `_spine/`.
+
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: G6 — SQL acceptance (Sales/KAM accepts the meeting) → owner Vishal Sobti (U0B9NU5E4UF)
+- gate: G8 — lawful-basis / compliance sign-off before cold outreach → owner Vishal Sobti (U0B9NU5E4UF)

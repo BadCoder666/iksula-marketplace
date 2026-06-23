@@ -1,0 +1,79 @@
+name: iKshana skill notifications
+
+# Posts as the iKshana Slack bot. Requires repo secret SLACK_BOT_TOKEN (xoxb-...).
+# Contributors must BRANCH within this repo (not fork) — secrets are withheld from fork PRs.
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  # 1) PR opened -> DM DJ only
+  notify-dj:
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+          dj=$(jq -r '."BadCoder666" // empty' .github/slack-handles.json)
+          [ -z "$dj" ] && { echo "No DJ handle in slack-handles.json"; exit 1; }
+          text=":bell: *Skill PR awaiting your approval* — *${PR_TITLE}* by \`${PR_AUTHOR}\`. Review: ${PR_URL}"
+          jq -n --arg ch "$dj" --arg t "$text" '{channel:$ch,text:$t}' \
+            | curl -sS -X POST https://slack.com/api/chat.postMessage \
+                -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" -H 'Content-type: application/json; charset=utf-8' \
+                --data @- | tee /tmp/o.json | jq -e '.ok' >/dev/null || { cat /tmp/o.json; exit 1; }
+
+  # 2) DJ approves -> DM the PR author
+  notify-author:
+    if: ${{ github.event_name == 'pull_request_review' && github.event.review.state == 'approved' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          REVIEWER: ${{ github.event.review.user.login }}
+        run: |
+          set -euo pipefail
+          author=$(jq -r --arg a "$PR_AUTHOR" '.[$a] // empty' .github/slack-handles.json)
+          if [ -z "$author" ]; then echo "::warning::No Slack handle for ${PR_AUTHOR}; DM skipped."; exit 0; fi
+          text=":white_check_mark: Your PR *${PR_TITLE}* was approved by \`${REVIEWER}\`. It goes live once merged. ${PR_URL}"
+          jq -n --arg ch "$author" --arg t "$text" '{channel:$ch,text:$t}' \
+            | curl -sS -X POST https://slack.com/api/chat.postMessage \
+                -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" -H 'Content-type: application/json; charset=utf-8' \
+                --data @- | tee /tmp/a.json | jq -e '.ok' >/dev/null || { cat /tmp/a.json; exit 1; }
+
+  # 3) PR merged (live) -> announce to #ikshana-updates ONLY when a real skill changed
+  announce-live:
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          UPDATES_CHANNEL: C0B8HGW3WDR
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          summary=$(python3 .github/scripts/skill-summary.py "$BASE_SHA" "$HEAD_SHA" || true)
+          if [ -z "$summary" ]; then
+            echo "No skill SKILL.md changed in this PR — skipping #ikshana-updates announcement."
+            exit 0
+          fi
+          text=$(printf ':sparkles: *New skill live in the iKshana marketplace*\n%s\n_Install or update it via your marketplace subscription._ %s' "$summary" "$PR_URL")
+          jq -n --arg ch "$UPDATES_CHANNEL" --arg t "$text" '{channel:$ch,text:$t}' \
+            | curl -sS -X POST https://slack.com/api/chat.postMessage \
+                -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" -H 'Content-type: application/json; charset=utf-8' \
+                --data @- | tee /tmp/l.json | jq -e '.ok' >/dev/null || { cat /tmp/l.json; exit 1; }
