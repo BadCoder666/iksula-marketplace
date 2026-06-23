@@ -15,7 +15,7 @@
 
 ---
 
-> **Where the code lives — GitHub, not a local drive.** Everything this guide refers to — the skill files and the toolkit code — lives in the GitHub repo **`BadCoder666/iksula-marketplace`** (branch `content-engine-specs`). All file paths below are written relative to a clone of that repo (so they start with `iksula-marketplace/...`). Browse the agents at https://github.com/BadCoder666/iksula-marketplace/tree/content-engine-specs/plugins/iksula-agents . To run anything yourself, first `git clone https://github.com/BadCoder666/iksula-marketplace`.
+> **Where the code lives — GitHub, not a local drive.** Everything this guide refers to — the skill files and the toolkit code — lives in the GitHub repo **`BadCoder666/iksula-marketplace`** (branch `main`). All file paths below are written relative to a clone of that repo (so they start with `iksula-marketplace/...`). Browse the agents at https://github.com/BadCoder666/iksula-marketplace/tree/main/plugins/iksula-agents . To run anything yourself, first `git clone https://github.com/BadCoder666/iksula-marketplace`.
 
 ## 1. What it is, and where it fits in the bigger picture
 
