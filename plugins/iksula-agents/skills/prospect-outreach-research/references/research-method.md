@@ -32,7 +32,7 @@ Use the **logged-in Sales Navigator session** in the browser.
 - **Online presence** — LinkedIn activity/posts; then X, Substack, YouTube via web search. **Published**
   articles are reachable; **comments** usually are not — say so rather than guessing.
 - **Direct connect** — connection **degree** (1st/2nd/3rd) and **shared connections** (warm-intro paths).
-- **Pacing/cap** — ≤10 profiles/run, pause between each. Public/professional only; no private detail.
+- **Pacing/cap** — process in **batches of 10**, pause between each profile, and take a short break (default **5 minutes**) between batches, looping until the file is done. **Hard stop at 200 prospects per run**; never more than **200 per rolling 4-hour window** (tracked in a local run-log). Public/professional only; no private detail. Stop on any LinkedIn checkpoint/rate warning.
 - **Fallback** — if no browser session, use public web only and mark connection + activity "not available".
 
 ## Fit, angle & content
