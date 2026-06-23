@@ -18,6 +18,28 @@ Expected: `VERDICT: HALT` — held for `zero_eligible_records` (no row has a law
 and exit code `2`. That is the wall working as designed. See
 `docs/lead-gen-agent-complete-guide.md` for the full explanation.
 
+## Sheet → ready-to-send (AI preps, a human sends)
+
+Turn a raw recipient sheet + email copy into a cleaned, de-duplicated,
+suppression-scrubbed, merge-validated package a human imports into Woodpecker and
+sends. **It never sends and never enrolls via the agent** — the human owns the send.
+`dj_sheet.csv` has deliberately dirty data (a case-duplicate, a bad email, an existing
+client to suppress).
+
+```bash
+python -m leadgen.sheet_to_ready \
+  --recipients leadgen/examples/dj_sheet.csv \
+  --subject    leadgen/examples/dj_subject.txt \
+  --body       leadgen/examples/dj_body.txt \
+  --suppress   leadgen/examples/dj_suppress.csv \
+  --out ready_package
+```
+Expected: `VERDICT: READY` — 6 rows in, **3 ready**, 1 bad email + 1 duplicate + 1
+suppressed dropped, merge preview clean. It writes `ready_package/` with
+`recipients_ready.csv` (import this into Woodpecker), `email_copy.txt`, and
+`READY_SUMMARY.md`. If any `{{field}}` would render literally, the verdict is
+**NOT READY** until the copy/data is fixed.
+
 ## Green-light path (shows the gate ALLOWing)
 
 `leads_cleared.csv` has a lawful basis recorded on each row. With the switches on and a
