@@ -152,16 +152,30 @@ def build_draft(name, mailbox_id, subject, body, run_id=None, created_at_utc=Non
 def main(argv=None):
     import argparse, sys
     ap = argparse.ArgumentParser(description="Turn a recipient sheet + email copy into a ready-to-send package (no sending).")
-    ap.add_argument("--recipients", required=True, help="CSV of recipients (must have an 'email' column)")
+    src = ap.add_mutually_exclusive_group(required=True)
+    src.add_argument("--recipients", help="CSV of recipients (must have an 'email' column)")
+    src.add_argument("--sheet-url", dest="sheet_url",
+                     help="Google Sheets link or id — fetched as CSV (the sheet must be shared 'Anyone with the link can view')")
     ap.add_argument("--subject", required=True, help="subject template file ({{field}} tokens allowed)")
     ap.add_argument("--body", required=True, help="email body template file ({{field}} tokens allowed)")
     ap.add_argument("--suppress", help="optional CSV of emails to exclude (existing clients / opt-outs)")
     ap.add_argument("--out", default="ready_package", help="output folder for the package")
     args = ap.parse_args(argv)
 
+    os.makedirs(args.out, exist_ok=True)
+    if args.sheet_url:
+        from . import gsheet
+        try:
+            recipients_path = gsheet.fetch_csv(args.sheet_url, os.path.join(args.out, "source_sheet.csv"))
+            print("Fetched the Google Sheet -> %s" % recipients_path)
+        except ValueError as e:
+            print("Could not fetch the sheet: %s" % e); return 2
+    else:
+        recipients_path = args.recipients
+
     subject = io.open(args.subject, encoding="utf-8-sig").read().strip()
     body = io.open(args.body, encoding="utf-8-sig").read()
-    s = build_package(args.recipients, subject, body, suppress_csv=args.suppress, out_dir=args.out)
+    s = build_package(recipients_path, subject, body, suppress_csv=args.suppress, out_dir=args.out)
     print(json.dumps(s, indent=2, ensure_ascii=False))
     print("\n=== %s ===" % s["verdict"])
     print("Package written to: %s/  (recipients_ready.csv, email_copy.txt, READY_SUMMARY.md)" % args.out)

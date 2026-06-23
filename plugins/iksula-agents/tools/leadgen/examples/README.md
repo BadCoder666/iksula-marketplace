@@ -40,6 +40,22 @@ suppressed dropped, merge preview clean. It writes `ready_package/` with
 `READY_SUMMARY.md`. If any `{{field}}` would render literally, the verdict is
 **NOT READY** until the copy/data is fixed.
 
+### Straight from a Google Sheet link
+
+Instead of `--recipients`, pass a **Google Sheet link** with `--sheet-url` — it fetches
+the sheet as CSV and runs the same pipeline:
+
+```bash
+python -m leadgen.sheet_to_ready \
+  --sheet-url "https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit#gid=0" \
+  --subject leadgen/examples/dj_subject.txt --body leadgen/examples/dj_body.txt \
+  --out ready_package
+```
+The sheet must be shared **"Anyone with the link can view"** (or published to the web).
+For a **private** sheet, either File → Download → CSV and use `--recipients`, or — in
+Claude Code — just give the agent the Sheet link and it downloads it via the Google Drive
+connector, then runs this tool and hands back the ready package + dropped-row report.
+
 ## Green-light path (shows the gate ALLOWing)
 
 `leads_cleared.csv` has a lawful basis recorded on each row. With the switches on and a

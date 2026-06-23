@@ -59,6 +59,16 @@ class SheetToReadyTests(unittest.TestCase):
         self.assertFalse(out["ready"])
         self.assertEqual(out["recipients"]["kept"], 0)
 
+    def test_gsheet_url_parsing(self):
+        from leadgen import gsheet
+        sid, gid = gsheet.extract_id_gid("https://docs.google.com/spreadsheets/d/1AbC-_dEf/edit#gid=42")
+        self.assertEqual(sid, "1AbC-_dEf"); self.assertEqual(gid, "42")
+        sid2, gid2 = gsheet.extract_id_gid("https://docs.google.com/spreadsheets/d/1AbC-_dEf/edit")
+        self.assertEqual(sid2, "1AbC-_dEf"); self.assertEqual(gid2, "0")   # default tab
+        self.assertIn("export?format=csv&gid=42", gsheet.export_csv_url("1AbC-_dEf", "42"))
+        with self.assertRaises(ValueError):
+            gsheet.extract_id_gid("not a sheet link")
+
     def test_draft_shell_is_create_only_dry_run(self):
         os.environ["WOODPECKER_AGENT_BUILD"] = "on"
         os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "warm-1"
