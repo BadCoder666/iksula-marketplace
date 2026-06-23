@@ -1,0 +1,3 @@
+email,first_name,company,Country,data_processing_basis,email_opt_out,is_existing_client
+priya@acme-corp.example,Priya,Acme Corp,US,Legitimate Interests,false,false
+sam@globex.example,Sam,Globex,US,Legitimate Interests,false,false

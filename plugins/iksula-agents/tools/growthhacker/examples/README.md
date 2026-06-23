@@ -20,3 +20,13 @@ Expected: the publish gate returns a verdict (the sample `organic_post` is instr
 and Scheduled, so it can ALLOW once `GROWTH_PUBLISH=on`), and the seam emit returns
 `emitted` with a fresh ULID and a `non-US: company-level ONLY` lawful-basis tag (because
 `region` is `DE`). See `docs/growth-hacker-agent-complete-guide.md` for the full walkthrough.
+
+## Voice gate (shows the gate HOLDing)
+
+`action_byline.json` is a reply posted as a **named leader** with no approval token, so the
+voice gate HOLDs it (a human must own the voice):
+
+```bash
+GROWTH_PUBLISH=on python -m growthhacker.preflight --action growthhacker/examples/action_byline.json
+```
+Expected: `PUBLISH: HOLD` — `byline_voice_not_approved`.
