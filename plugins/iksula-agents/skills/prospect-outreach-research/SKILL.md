@@ -4,14 +4,15 @@ description: >-
   Iksula's pre-engagement prospecting Hand — a fast, basic research pass on a COLD prospect and their
   company that ends in ready-to-send LinkedIn outreach. Sits BEFORE client-research in the GTM value
   chain: cold/basic here, engaged/deep there. Runs in two modes — (SINGLE) one prospect → a Word
-  dossier + a one-page brief + 5 outreach messages; (BULK) an .xlsx list of up to 10, paced → the full
-  dossier written back as a new worksheet (one row per prospect) in a dated copy of the input file.
-  Reads the prospect's role, activity and connection-degree from a logged-in LinkedIn Sales Navigator
-  session in the browser, and company / platform / news from the public web. Brain-aware via brain_io
-  (method-vocab, vertical-mapping, solutions-catalogue, icp-audience, voices) — READ-ONLY, no Brain or
-  Spine write-back. Owns no register. Use when the user says "research this prospect", "prep outreach for
-  this person", "run prospect-outreach-research", "bulk prospect research", or "draft LinkedIn outreach
-  for a prospect".
+  dossier + a one-page brief + 5 outreach messages; (BULK) an .xlsx list processed in paced batches of
+  10 — auto-looping with a short break between batches, a HARD STOP at 200 prospects per run, and a cap of
+  no more than 200 prospects per rolling 4-hour window — written back as a new worksheet (one row per
+  prospect) in a dated copy of the input file. Reads the prospect's role,
+  activity and connection-degree from a logged-in LinkedIn Sales Navigator session in the browser, and
+  company / platform / news from the public web. Brain-aware via brain_io (method-vocab, vertical-mapping,
+  solutions-catalogue, icp-audience, voices) — READ-ONLY, no Brain or Spine write-back. Owns no register.
+  Use when the user says "research this prospect", "prep outreach for this person", "run
+  prospect-outreach-research", "bulk prospect research", or "draft LinkedIn outreach for a prospect".
 ---
 
 # Prospect Outreach Research (pre-engagement prospecting — Brain-aware)
@@ -52,13 +53,17 @@ then stop and wait:
 > - The prospect's LinkedIn profile link
 >
 > **What you give it — many at once (bulk):** an Excel file (`.xlsx`), **one prospect per row**, with
-> three columns: **Company**, **Website URL**, **LinkedIn URL**. Up to **10 rows** per run.
+> three columns: **Company**, **Website URL**, **LinkedIn URL**.
 >
 > **Before you run:** log in to **LinkedIn Sales Navigator** in your browser. The skill reads each
 > profile through your logged-in session.
 >
-> **Limit:** **10 prospects per run**, paced with short pauses to keep your Sales Navigator account safe.
-> Got more than 10? Split them into batches and run each batch.
+> **Batch size, big files & limits:** the skill works in **batches of 10 prospects**, paced with short
+> pauses between profiles. If your file has more than 10, you do **not** need to split it — the skill
+> **auto-loops**: 10, a short break, the next 10, and so on, saving each batch as it finishes. Two safety
+> limits apply: a **hard stop at 200 prospects per run**, and a cap of **no more than 200 prospects in any
+> rolling 4-hour window**. If a file is bigger than 200 (or you've already run 200 in the last 4 hours),
+> the skill does what it can, stops, and tells you the earliest time you can resume the rest.
 >
 > **What you get — one prospect:** a Word dossier, a one-page brief, and 5 LinkedIn messages (2 short
 > connect notes, 2 warm, 1 direct).
@@ -70,11 +75,49 @@ then stop and wait:
 | Mode | When | Input | Output |
 |------|------|-------|--------|
 | **SINGLE** | Prepping outreach to one named prospect | company name · website URL · prospect LinkedIn URL | Word dossier + one-page brief + 5 outreach messages (copy-ready) |
-| **BULK** | A shortlist to work through | an `.xlsx` with one row per prospect (company · website URL · LinkedIn URL), **up to 10 per run** | a **dated copy of the input file** with a new **`Prospect Research`** worksheet — full dossier as a table, one row per prospect, including 5 message columns |
+| **BULK** | A shortlist (any length) to work through | an `.xlsx` with one row per prospect (company · website URL · LinkedIn URL) | a **dated copy of the input file** with a new **`Prospect Research`** worksheet — full dossier as a table, one row per prospect, including 5 message columns |
 
 If the mode isn't obvious from the input (a single prospect vs. a file of many), ASK (AskUserQuestion).
-**Bulk is capped at 10 prospects per run and paced** (a pause between LinkedIn visits) — see the
-account-safety rule below; if the list is longer, split into batches.
+**Bulk runs in paced batches of 10 prospects** (a deliberate pause between LinkedIn visits). For files
+larger than 10, the skill **auto-loops** — with a **hard stop at 200 prospects per run** and a **cap of no
+more than 200 per rolling 4-hour window**. See "Large files — auto-batch loop & rate cap" and the
+account-safety rule below. The user does **not** need to pre-split the file.
+
+### Large files — auto-batch loop & rate cap (BULK)
+When a BULK file has more than 10 rows, process it in paced batches without making the user split it:
+
+1. **Batch.** Take the next **10** un-processed rows (in file order).
+2. **Research the batch** at the normal per-profile pace (deliberate pause between each LinkedIn visit).
+3. **Write the batch back** to the `Prospect Research` worksheet in the dated output copy **as soon as the
+   batch is done** — incremental save, so an interruption never loses completed batches.
+4. **Break.** If rows remain and neither limit below is hit, pause **5 minutes** before the next batch and
+   tell the user the progress (e.g. "batch 4 of 20 done — pausing 5 min, 160 rows to go").
+5. **Loop** steps 1–4 until the file is exhausted **or** a limit below is reached.
+
+**Hard stop — 200 prospects per run.** A single run researches **at most 200 prospects**. On reaching 200,
+**stop even if rows remain**, save the output, and tell the user exactly how many rows are left and when
+they can resume (per the 4-hour cap below).
+
+**Rate cap — no more than 200 prospects per rolling 4-hour window.** Across runs, never process more than
+200 prospects in any 4-hour period:
+- Keep a small **local run-log** alongside the deliverable (one line per batch: timestamp + count). It is
+  the throttle's memory across runs.
+- **At intake**, read the run-log and sum prospects processed in the **last 4 hours**:
+  - If that sum is already **≥ 200**, do **not** run — tell the user the earliest time they can resume
+    (4 hours after the oldest entry among the most-recent 200).
+  - If only a partial budget remains (e.g. 70 already done in the window), process **only up to the
+    remaining budget** this run, then stop and report.
+- Append to the run-log as each batch completes. If no run-log exists yet (fresh environment), assume no
+  prior runs and create it.
+- This is an **agent-side guardrail** enforced via the run-log, not a hard system lock; honour it strictly
+  and never bypass it to "finish faster".
+
+- **At intake, tell the user the plan**: total rows, batches of 10, the 200-per-run hard stop, the
+  200-per-4-hour cap, the remaining budget in the current window, and the rough time.
+- **One output file.** All batches write into the **same** dated copy / same `Prospect Research` tab —
+  never one file per batch.
+- **If LinkedIn shows a checkpoint, rate-limit or security warning at any point, STOP** the loop, save
+  what's done, and tell the user — never push through a warning to finish the file.
 
 ## Inputs (all mandatory)
 - **Company name.**
@@ -90,9 +133,13 @@ tools), used to read the prospect's lead/account page: role, responsibilities, r
 **connection degree + shared connections**. Public web search is the fallback when the browser session
 isn't available, and it then marks the connection check and activity as "not available".
 
-- **Pace and cap.** In BULK, visit at most ~10 profiles per run with a deliberate pause between each.
-  Rapid, high-volume profile visits look like automation to LinkedIn and can get the account warned or
-  restricted. Protect the user's real Sales Navigator account over throughput.
+- **Pace, batch, break and cap.** In BULK, process in **batches of 10 profiles** with a **deliberate pause
+  between each profile**, and a short break (default **5 minutes**) between batches. Enforce two hard
+  limits: a **hard stop at 200 prospects per run**, and **no more than 200 prospects per rolling 4-hour
+  window** (tracked in the local run-log — see "Large files"). The pacing, the inter-batch break and the
+  caps keep volume human-paced: rapid, high-volume profile visits look like automation to LinkedIn and can
+  get the account warned or restricted. **Protect the user's real account over throughput** — if LinkedIn
+  shows a checkpoint or rate/security warning, stop the loop, save progress, and tell the user.
 - **Public / professional only.** Role, tenure, posts, shared connections — yes. No private data, no
   scraping behind anything the logged-in user can't normally see, no personal-life detail.
 
@@ -141,17 +188,20 @@ to fill the gap.
 | **SINGLE — Prospect dossier** | `.docx` (Iksula brand) | The full basic read, sourced. Every fact carries a source; estimates and low-confidence items (revenue, PIM) flagged. Built with the **docx** skill. |
 | **SINGLE — One-page brief** | `.docx`/`.md`, 1 page | The read-ahead: who, the hook, the fit, the angle — plus the 5 messages inline. |
 | **SINGLE — Outreach messages** | copy-ready block | 5 drafts: **2 connect notes** (≤300 chars), **2 warm InMails**, **1 direct InMail**. |
-| **BULK — Results worksheet** | new tab in a **dated copy** of the input `.xlsx` | One row per prospect; columns = the full dossier fields + **5 message columns** (Connect note 1, Connect note 2, Warm InMail 1, Warm InMail 2, Direct InMail). Built with the **xlsx** skill. Original file is never overwritten. |
+| **BULK — Results worksheet** | new tab in a **dated copy** of the input `.xlsx` | One row per prospect; columns = the full dossier fields + **5 message columns** (Connect note 1, Connect note 2, Warm InMail 1, Warm InMail 2, Direct InMail). Built with the **xlsx** skill. **Written incrementally, batch by batch**, into one file. Original file is never overwritten. |
 | (always) — Raw evidence | local, with the deliverable | Sources + URLs + access dates captured **before** distilling; every published fact traces back here. **Not** written to the Brain. |
 
 Tell the user which deliverables you're producing and **ask which folder to save the rendered files to**.
 
 ## Workflow (5 phases, 1 human gate)
-0. **Intake & scope** *(gate)* — confirm the **mode** (single vs bulk), the **three inputs** per prospect,
-   and for bulk the **batch size (≤10)**. `brain_io get` `method-vocab`, the latest `vertical-mapping`
-   output, `solutions-catalogue`, `icp-audience`, and the `voices`/content records. Confirm the entity and
-   the country/market (which site, which subsidiary) — **never guess**. Restate scope; confirm before
-   researching.
+0. **Intake & scope** *(gate)* — confirm the **mode** (single vs bulk) and the **three inputs** per
+   prospect. For BULK, count the rows and state the **batch plan**: batches of **10**, a short break
+   between batches, **auto-looping** with a **hard stop at 200 prospects per run** and **no more than 200
+   per rolling 4-hour window** (checked against the local run-log), plus the remaining budget in the window
+   and the rough total time and batch count.
+   `brain_io get` `method-vocab`, the latest `vertical-mapping` output, `solutions-catalogue`,
+   `icp-audience`, and the `voices`/content records. Confirm the entity and the country/market (which site,
+   which subsidiary) — **never guess**. Restate scope; confirm before researching.
 1. **Capture (raw-first, kept local)** — run the research and record every source, figure, quote, URL and
    access date as you go, alongside the deliverable. Nothing is distilled until it exists as raw. **Verify
    present-day facts with search, not memory** — leadership, ownership, financials and tech change.
@@ -163,13 +213,16 @@ Tell the user which deliverables you're producing and **ask which folder to save
    **approx. product count** (sitemap / category counts). See `references/research-method.md`.
 3. **Prospect read (Sales Navigator)** — role & responsibilities; public presence across LinkedIn / X /
    Substack / YouTube (articles published; comments only if reachable); **direct LinkedIn connect?**
-   (degree + shared connections). Public/professional only; paced per the account-safety rule.
+   (degree + shared connections). Public/professional only; paced per the account-safety rule. In BULK,
+   run this in **batches of 10** with a short break between batches, looping until the file is done or the
+   **200-per-run hard stop**, and never exceeding **200 per rolling 4-hour window**.
 4. **Fit, angle & messages** — map needs to **named `solutions-catalogue` offers**; pick **content to
    forward** from `voices`/content; check fit against `icp-audience`. Draft the **5 messages** tuned to
    the person and the hook (2 connect notes ≤300 chars, 2 warm, 1 direct). Then **verify**: every fact
    traces to raw + a source; estimates and inferences labelled; **prospect-stage discipline — never
    present an inference or a hoped-for fit as a confirmed fact.** Produce the deliverables (single docs,
-   or the bulk worksheet write-back) and show the user the headline findings + sources.
+   or the bulk worksheet write-back, **saved incrementally per batch**) and show the user the headline
+   findings + sources.
 
 **Human gate** routes to Slack `#agentic-org-requests` (✅ proceed / ✍️ revise / ⏸ hold) when running
 inside the conductor; standalone, confirm with the user in-session.
@@ -177,8 +230,12 @@ inside the conductor; standalone, confirm with the user in-session.
 ## Operating principles
 - **Pre-engagement, basic by design** — this is a fast first read to open a conversation, not a deep
   dossier. When the account warms, hand off to `client-research`.
-- **Protect the LinkedIn account** — pace and cap profile visits; throughput never beats keeping the
-  user's Sales Navigator account in good standing.
+- **Protect the LinkedIn account** — pace profiles, cap each batch at 10, break between batches, hard-stop
+  at 200 per run, and never exceed 200 per rolling 4 hours; throughput never beats keeping the user's
+  account in good standing.
+- **Finish the file, safely** — for large BULK files, auto-loop (10 at a time) and save each batch as you
+  go, respecting the 200-per-run hard stop and the 200-per-4-hour cap; don't make the user re-split, and
+  don't bypass the caps to finish faster.
 - **Sourced over asserted** — present-day facts come from search, not memory; keep a defensible source
   list. Mark unverified items TBD.
 - **Estimate honestly** — revenue is a range with a source or "not found"; PIM is usually "unknown".
@@ -195,13 +252,16 @@ inside the conductor; standalone, confirm with the user in-session.
 
 ## Anti-patterns to avoid
 - Treating this like `client-research` — over-researching a cold prospect into a 20-page dossier.
-- Hammering LinkedIn: visiting dozens of profiles fast and risking the user's Sales Navigator account.
+- Hammering LinkedIn: skipping the per-profile pause or the inter-batch break, or exceeding the
+  200-per-run / 200-per-4-hour caps, and risking the user's account.
+- Pushing through a LinkedIn checkpoint / rate warning to finish the file instead of stopping and saving.
 - Stating estimated revenue, inferred PIM, or the tech stack as confirmed fact with no flag.
 - Writing the pitch deck or a full outreach sequence (that's the Architect / Lead Gen).
 - Writing anything back to the Brain or Spine (this skill is read-only by design).
 - Generic, copy-paste outreach that ignores the person's role, posts and shared connections.
 - Researching the whole market when the ask was one prospect (that's `research-solutions`).
-- In bulk, overwriting the user's input file instead of writing a dated copy with a new worksheet.
+- In bulk, overwriting the user's input file, or writing one file per batch instead of one incrementally-
+  saved dated copy with a single new worksheet.
 
 ## Conventions (do not remove)
 - Brand: Carlito, primary red `#9A0D15`, light cards — for the dossier / one-pager when rendered as
@@ -215,7 +275,7 @@ inside the conductor; standalone, confirm with the user in-session.
 ## Resources
 - `brain_io-howto` (in `_brain/`) — the read verbs (authoritative).
 - `${CLAUDE_PLUGIN_ROOT}/skills/prospect-outreach-research/references/mandate.md` — the authoritative spec
-  (scope, lane vs. `client-research`, the value-chain placement, modes, batch cap, I/O contract).
+  (scope, lane vs. `client-research`, the value-chain placement, modes, batch size + auto-loop, I/O contract).
 - `${CLAUDE_PLUGIN_ROOT}/skills/prospect-outreach-research/references/research-method.md` — the source map,
   the platform/PIM/product-count detection method, the Sales Navigator method + pacing, confidence rules.
 - `${CLAUDE_PLUGIN_ROOT}/skills/prospect-outreach-research/references/deliverable-templates.md` — the
