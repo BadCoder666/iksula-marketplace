@@ -105,7 +105,10 @@ class WoodpeckerClient:
         if (not self.dry_run) or (self._transport is not None):
             self._assert_no_collision(name)
 
-        body = {"name": name, "email_account_ids": [mailbox_id], "settings": settings, "steps": steps}
+        # Woodpecker wants email_account_ids as integers; the isolation guards use the
+        # mailbox id as a string, so coerce a numeric id here.
+        acct = int(mailbox_id) if str(mailbox_id).strip().isdigit() else mailbox_id
+        body = {"name": name, "email_account_ids": [acct], "settings": settings, "steps": steps}
 
         if self.dry_run:
             cid = "DRYRUN-%s" % (run_id or "x")

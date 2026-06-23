@@ -137,16 +137,33 @@ def _render(s):
 
 
 # ---- optional: also create the Woodpecker DRAFT shell (create-only, never sends) ----
-def build_draft(name, mailbox_id, subject, body, run_id=None, created_at_utc=None, dry_run=True):
+def build_draft(name, mailbox_id, subject, message_html, run_id=None, created_at_utc=None,
+                dry_run=True, timezone="Asia/Kolkata", daily_enroll=50):
+    """Create the Woodpecker DRAFT campaign shell via the create-only client (NEVER sends).
+    `message_html` is the email body (HTML); `mailbox_id` must be an allow-listed, warmed,
+    secondary-domain mailbox (never primary/live). Recipients are NOT enrolled here — a human
+    imports them into the draft and presses send. Verified against the v2 schema 2026-06-23."""
+    import uuid
     from .wp_client import WoodpeckerClient
-    steps = [
-        {"type": "START"},
-        {"type": "EMAIL", "followup": False, "subject": subject,
-         "body": {"versions": [{"body": body}]}},
-    ]
+    settings = {
+        "timezone": timezone, "prospect_timezone": False, "daily_enroll": daily_enroll,
+        "gdpr_unsubscribe": False, "list_unsubscribe": False,
+        "open_disabled_list": [], "auto_pause_prospect_from_domain_statuses": [],
+        "catch_all_verification_mode": "BALANCED",
+    }
+    steps = {  # NOTE: v2 'steps' is a single nested object, not an array
+        "id": str(uuid.uuid4()), "type": "START",
+        "followup": {
+            "id": str(uuid.uuid4()), "type": "EMAIL",
+            "delivery_time": {d: [{"from": "09:00", "to": "18:00"}] for d in
+                              ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")},
+            "body": {"versions": [{"version": "A", "subject": subject, "message": message_html,
+                                   "signature": "SENDER", "track_opens": True}]},
+            "followup": None,
+        },
+    }
     c = WoodpeckerClient(dry_run=dry_run)
-    return c.create_campaign(name, mailbox_id, {"timezone": "Asia/Kolkata", "daily_enroll": 50},
-                             steps, run_id=run_id, created_at_utc=created_at_utc)
+    return c.create_campaign(name, mailbox_id, settings, steps, run_id=run_id, created_at_utc=created_at_utc)
 
 
 def main(argv=None):
