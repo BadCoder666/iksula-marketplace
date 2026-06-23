@@ -1,0 +1,12 @@
+{
+  "source_asset_ref": "PC2-post-01",
+  "source_channel": "LinkedIn-post",
+  "intent_signal": {
+    "signal_type": "comment",
+    "verbatim_text": "How does this handle EU catalogs?",
+    "observed_at": "2026-06-23T10:00:00Z"
+  },
+  "region": "DE",
+  "captured_at": "2026-06-23T10:00:00Z",
+  "contact_identity": { "platform_handle": "@example_user" }
+}

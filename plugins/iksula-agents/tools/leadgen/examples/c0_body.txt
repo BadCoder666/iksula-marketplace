@@ -1,0 +1,1 @@
+Hi {{first_name}}, saw {{company}} is scaling its product catalog. Distributors we work with cut data cost ~70% while hitting 98% listing accuracy. Worth a 20-minute look at the before/after on your top category?
