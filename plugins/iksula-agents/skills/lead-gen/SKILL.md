@@ -100,3 +100,10 @@ Before every outbound (email or 1-to-1 DM), in this order: (a) **lawful-basis si
 - `${CLAUDE_PLUGIN_ROOT}/references/seam-and-compliance.md` — the `content-sourced-lead` seam payload (`correlation_id`, `contact_identity`, `source_asset_ref`, `source_channel`, `intent_signal`, `region`, `lawful_basis_tag`, `consent_context`, `ack_status`…), idempotent-consume + canonical-key resolution rules, and the compliance playbook (geo-gated de-anon, lawful-basis sign-off, synchronous suppression scrub, existing-client/ECS routing, pilot human-gating).
 - `${CLAUDE_PLUGIN_ROOT}/references/sending-stack.md` — the execution layer: tool split (Woodpecker cold / Mailerlite opted-in / Zoho state), Woodpecker's constraints (1-condition branching, gated API), the multi-campaign Router branching model, the agent's build-and-stage job with its hard stops, the **send-mode-OFF** gate, and the safe pilot path.
 - Live contracts (authoritative — read, don't duplicate): `brain_io-howto` in `_brain/`; the `_spine-howto` and the `content-sourced-lead` queue/table in `_spine/`.
+
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: G6 — SQL acceptance (Sales/KAM accepts the meeting) → owner Vishal Sobti (U0B9NU5E4UF)
+- gate: G8 — lawful-basis / compliance sign-off before cold outreach → owner Vishal Sobti (U0B9NU5E4UF)

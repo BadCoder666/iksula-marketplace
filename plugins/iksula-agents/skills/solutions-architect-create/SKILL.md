@@ -64,3 +64,9 @@ the wedge · one source of truth (the Spine record) · standing intel lives in t
 - `brain_io-howto` + `raw-capture-howto` (in `_brain/`) · `references/deck-build-spec.md` *(unchanged)*.
 - ~~`references/competitive-research-playbook.md`~~ → competitive research now reads/writes `competitor-radar`
   (standing radar owned by `research-solutions`).
+
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: G2 — client pitch-deck accuracy before external use (pitch-stage-proof rule) → owner DJ (U0B0B545G9G) + Abhishek Jain (U078STK5YEN) [+ SME per solution]

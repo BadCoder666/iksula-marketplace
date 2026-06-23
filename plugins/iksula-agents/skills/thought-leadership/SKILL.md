@@ -44,3 +44,9 @@ Authority first; the deletion test; one arguable thesis; white space at the seam
 ## Resources
 - `brain_io-howto` (in `_brain/`) · `references/article-build-spec.md` *(unchanged)*
 - ~~`references/roster-and-monitoring-playbook.md`~~ → **moved to the Brain** (`voices` + brain_io).
+
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: G3 — byline voice + claims before publishing → owner DJ (U0B0B545G9G)

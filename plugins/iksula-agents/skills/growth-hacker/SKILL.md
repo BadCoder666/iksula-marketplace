@@ -85,3 +85,8 @@ Imperative phases. **Surface, don't decide; execute, don't re-plan.** Detail in 
 - `${CLAUDE_PLUGIN_ROOT}/references/experiment-design.md` — the A/B/growth-experiment method: what GH may vary (and may not), hypothesis register, primary metric + sample/stop-rule, audience-type control, winner declaration → `channel-intel-growth`.
 - `${CLAUDE_PLUGIN_ROOT}/references/seam-contract.md` — the `content-sourced-lead` seam: full payload schema, the region/lawful-basis stamping rule, idempotent emit (ULID `correlation_id`), what GH must NOT do (no score, no de-anon, no account routing), and why it is a Spine record not a Brain feed.
 - Live contracts (authoritative — read, don't duplicate): `brain_io-howto` in `_brain/`; the publishing-calendar, media-plan and asset-bundle records in `_spine/`.
+
+## Human gate(s)
+This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
+
+- gate: (inherited) G5 — paid spend inherits the media-budget gate → owner Vishal Sobti (U0B9NU5E4UF). Community replies are voice-governed (a human owns the byline voice).
