@@ -1,0 +1,4 @@
+email,first_name,company,Country,data_processing_basis,email_opt_out,is_existing_client
+priya@acme-corp.example,Priya,Acme Corp,US,,false,false
+sam@globex.example,Sam,Globex,US,,false,false
+john@initech.example,John,Initech,US,,false,false

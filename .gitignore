@@ -13,3 +13,12 @@ venv/
 # Local scratch
 /tmp/
 *.log
+
+# Execution toolkit local runtime/scratch (Spine/Brain mirrors, demos)
+_state/
+_demo/
+
+# Secrets — set real values in your shell or a local .env (never commit them).
+# .env.example (the template, no values) IS tracked.
+.env
+*.local
