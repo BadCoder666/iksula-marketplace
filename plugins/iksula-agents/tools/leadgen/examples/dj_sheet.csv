@@ -1,0 +1,7 @@
+email,first_name,company
+Priya@Acme-Corp.example,Priya,Acme Corp
+sam@globex.example,Sam,Globex
+priya@acme-corp.example,Priya,Acme Corp
+not-an-email,Bob,Bad Inc
+mike@initech.example,Mike,Initech
+existing@bigclient.example,Ann,BigClient

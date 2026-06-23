@@ -1,0 +1,1 @@
+Hi {{first_name}}, saw {{company}} is scaling its catalog. Distributors we work with cut data cost ~70%. Worth a 20-min look?

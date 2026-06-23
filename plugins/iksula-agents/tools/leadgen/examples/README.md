@@ -18,6 +18,44 @@ Expected: `VERDICT: HALT` — held for `zero_eligible_records` (no row has a law
 and exit code `2`. That is the wall working as designed. See
 `docs/lead-gen-agent-complete-guide.md` for the full explanation.
 
+## Sheet → ready-to-send (AI preps, a human sends)
+
+Turn a raw recipient sheet + email copy into a cleaned, de-duplicated,
+suppression-scrubbed, merge-validated package a human imports into Woodpecker and
+sends. **It never sends and never enrolls via the agent** — the human owns the send.
+`dj_sheet.csv` has deliberately dirty data (a case-duplicate, a bad email, an existing
+client to suppress).
+
+```bash
+python -m leadgen.sheet_to_ready \
+  --recipients leadgen/examples/dj_sheet.csv \
+  --subject    leadgen/examples/dj_subject.txt \
+  --body       leadgen/examples/dj_body.txt \
+  --suppress   leadgen/examples/dj_suppress.csv \
+  --out ready_package
+```
+Expected: `VERDICT: READY` — 6 rows in, **3 ready**, 1 bad email + 1 duplicate + 1
+suppressed dropped, merge preview clean. It writes `ready_package/` with
+`recipients_ready.csv` (import this into Woodpecker), `email_copy.txt`, and
+`READY_SUMMARY.md`. If any `{{field}}` would render literally, the verdict is
+**NOT READY** until the copy/data is fixed.
+
+### Straight from a Google Sheet link
+
+Instead of `--recipients`, pass a **Google Sheet link** with `--sheet-url` — it fetches
+the sheet as CSV and runs the same pipeline:
+
+```bash
+python -m leadgen.sheet_to_ready \
+  --sheet-url "https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit#gid=0" \
+  --subject leadgen/examples/dj_subject.txt --body leadgen/examples/dj_body.txt \
+  --out ready_package
+```
+The sheet must be shared **"Anyone with the link can view"** (or published to the web).
+For a **private** sheet, either File → Download → CSV and use `--recipients`, or — in
+Claude Code — just give the agent the Sheet link and it downloads it via the Google Drive
+connector, then runs this tool and hands back the ready package + dropped-row report.
+
 ## Green-light path (shows the gate ALLOWing)
 
 `leads_cleared.csv` has a lawful basis recorded on each row. With the switches on and a
