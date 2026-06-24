@@ -218,13 +218,20 @@ class WoodpeckerClient:
                 if n in row and row[n] not in (None, ""):
                     return str(row[n])
             return ""
-        return {
+        p = {
             "email": str(row.get("email") or row.get("Email") or "").strip().lower(),
             "first_name": g("first_name", "First Name", "FIRST_NAME", "firstname"),
             "last_name": g("last_name", "Last Name", "LAST_NAME", "lastname"),
             "company": g("company", "Company", "COMPANY"),
             "title": g("title", "Title", "TITLE"),
         }
+        # per-prospect personalization snippets (Woodpecker snippet1..15), only if supplied —
+        # this is how each prospect carries their own bespoke body in a single-template step.
+        for i in range(1, 16):
+            k = "snippet%d" % i
+            if row.get(k) not in (None, ""):
+                p[k] = str(row[k])
+        return p
 
     # ---- guards ---------------------------------------------------------------
     def _assert_mailbox_isolated(self, mailbox_id):

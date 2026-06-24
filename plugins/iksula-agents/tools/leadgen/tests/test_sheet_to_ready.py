@@ -115,6 +115,63 @@ class SheetToReadyTests(unittest.TestCase):
             with self.assertRaises(ForbiddenAction):
                 c._http(method, path)
 
+    def test_prospect_carries_snippets_only_when_present(self):
+        # per-prospect snippets (snippet1..15) ride along to Woodpecker if supplied,
+        # and are omitted entirely otherwise (so single-template flows are unaffected).
+        from leadgen.wp_client import WoodpeckerClient
+        with_snip = WoodpeckerClient._prospect(
+            {"email": "A@x.example", "first_name": "A", "company": "Co",
+             "snippet1": "warm 1", "snippet2": "warm 2", "snippet3": "direct"})
+        self.assertEqual(with_snip["email"], "a@x.example")
+        self.assertEqual(with_snip["snippet1"], "warm 1")
+        self.assertEqual(with_snip["snippet3"], "direct")
+        self.assertNotIn("snippet4", with_snip)
+        plain = WoodpeckerClient._prospect({"email": "b@x.example", "first_name": "B"})
+        self.assertFalse(any(k.startswith("snippet") for k in plain))
+
+    def test_build_sequence_draft_is_three_step_create_only_dry_run(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"
+        os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "warm-1"
+        from leadgen import config as lc
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_seq.jsonl")
+        spec = [
+            {"subject": "s1 {{COMPANY}}", "message": '{{SNIPPET_1 | "fb"}}', "days_to_next": 3},
+            {"subject": "s2", "message": '{{SNIPPET_2 | "fb"}}', "days_to_next": 4},
+            {"subject": "s3", "message": '{{SNIPPET_3 | "fb"}}', "days_to_next": 1},
+        ]
+        res = s2r.build_sequence_draft("[LG-AGENT] seq test", "warm-1", spec,
+                                       run_id="r", created_at_utc="t", dry_run=True)
+        self.assertEqual(res["status"], "DRAFT")
+        self.assertTrue(res["dry_run"])
+
+    def test_build_sequence_draft_chains_followup_after(self):
+        # verify the START -> EMAIL -> EMAIL -> EMAIL chain + per-step delays, without network
+        import leadgen.wp_client as wc
+        captured = {}
+
+        def fake_create(self, name, mailbox_id, settings, steps, run_id=None, created_at_utc=None):
+            captured["steps"] = steps
+            return {"campaign_id": "DRYRUN", "status": "DRAFT", "dry_run": True}
+
+        orig = wc.WoodpeckerClient.create_campaign
+        wc.WoodpeckerClient.create_campaign = fake_create
+        try:
+            spec = [
+                {"subject": "s1", "message": '{{SNIPPET_1 | "fb"}}', "days_to_next": 3},
+                {"subject": "s2", "message": '{{SNIPPET_2 | "fb"}}', "days_to_next": 4},
+                {"subject": "s3", "message": '{{SNIPPET_3 | "fb"}}', "days_to_next": 1},
+            ]
+            s2r.build_sequence_draft("[LG-AGENT] seq", "warm-1", spec, dry_run=True)
+        finally:
+            wc.WoodpeckerClient.create_campaign = orig
+        steps = captured["steps"]
+        self.assertEqual(steps["type"], "START")
+        e1 = steps["followup"]; e2 = e1["followup"]; e3 = e2["followup"]
+        self.assertEqual([e1["type"], e2["type"], e3["type"]], ["EMAIL", "EMAIL", "EMAIL"])
+        self.assertEqual(e1["followup_after"], {"range": "DAY", "value": 3})
+        self.assertEqual(e2["followup_after"], {"range": "DAY", "value": 4})
+        self.assertIsNone(e3["followup"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

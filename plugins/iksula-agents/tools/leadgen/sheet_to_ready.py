@@ -171,6 +171,47 @@ def build_draft(name, mailbox_id, subject, message_html, run_id=None, created_at
     return c.create_campaign(name, mailbox_id, settings, steps, run_id=run_id, created_at_utc=created_at_utc)
 
 
+def build_sequence_draft(name, mailbox_id, steps_spec, run_id=None, created_at_utc=None,
+                         dry_run=True, timezone="US/Eastern", daily_enroll=50):
+    """Create a MULTI-STEP Woodpecker DRAFT (a follow-up sequence) via the create-only client.
+
+    `steps_spec` is a list of dicts, one per EMAIL touch, in order:
+        {"subject": str, "message": html, "days_to_next": int}
+    `days_to_next` is the gap (in days) until the NEXT touch (ignored on the last step).
+    The bodies typically reference per-prospect snippets ({{SNIPPET1}}..) so each prospect
+    carries their own copy. Schema mirrors a live v2 campaign (verified 2026-06-24):
+    steps = START -> EMAIL(followup_after) -> EMAIL ... ; never sends (DRAFT)."""
+    import uuid
+    from .wp_client import WoodpeckerClient
+    WEEKDAYS = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
+    settings = {
+        "timezone": timezone, "prospect_timezone": False, "daily_enroll": daily_enroll,
+        "gdpr_unsubscribe": True, "list_unsubscribe": True,   # Woodpecker auto-appends a compliant unsubscribe link
+        "open_disabled_list": [], "auto_pause_prospect_from_domain_statuses": [],
+        "auto_pause_prospect_from_domain": None, "catch_all_verification_mode": "BALANCED",
+        "count_followup_delay_in_working_days": True,
+    }
+
+    def email_step(spec, followup):
+        return {
+            "id": str(uuid.uuid4()), "type": "EMAIL",
+            "followup_after": {"range": "DAY", "value": int(spec.get("days_to_next", 1))},
+            "delivery_time": {d: [{"from": "09:00", "to": "18:00"}] for d in WEEKDAYS},
+            "body": {"versions": [{"id": str(uuid.uuid4()), "version": "A",
+                                   "subject": spec["subject"], "message": spec["message"],
+                                   "signature": "SENDER", "track_opens": True}]},
+            "followup": followup,
+        }
+
+    followup = None
+    for spec in reversed(steps_spec):              # chain last -> first
+        followup = email_step(spec, followup)
+    steps = {"id": str(uuid.uuid4()), "type": "START", "followup": followup}
+
+    c = WoodpeckerClient(dry_run=dry_run)
+    return c.create_campaign(name, mailbox_id, settings, steps, run_id=run_id, created_at_utc=created_at_utc)
+
+
 def main(argv=None):
     import argparse, sys, uuid, csv as _csv
     from datetime import datetime, timezone
