@@ -173,5 +173,64 @@ class SheetToReadyTests(unittest.TestCase):
         self.assertIsNone(e3["followup"])
 
 
+class StageCampaignTests(unittest.TestCase):
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+        self.csv = os.path.join(self.d, "rec.csv")
+
+    def _write(self, rows):
+        _csv(self.csv, rows, ["email", "first_name", "company", "snippet1", "snippet2", "snippet3"])
+
+    def test_read_requires_snippet_columns(self):
+        from leadgen import stage_campaign as sc
+        _csv(self.csv, [{"email": "a@x.example"}], ["email"])
+        with self.assertRaises(ValueError):
+            sc._read_recipients(self.csv)
+
+    def test_validate_drops_empty_and_unsafe_copy(self):
+        from leadgen import stage_campaign as sc
+        self._write([
+            {"email": "a@x.example", "first_name": "A", "company": "C", "snippet1": "one", "snippet2": "two", "snippet3": "three"},
+            {"email": "b@x.example", "first_name": "B", "company": "C", "snippet1": "", "snippet2": "two", "snippet3": "three"},
+            {"email": "c@x.example", "first_name": "C", "company": "C", "snippet1": "has {{TOKEN}}", "snippet2": "two", "snippet3": "three"},
+        ])
+        ok, problems = sc.validate(sc._read_recipients(self.csv))
+        self.assertEqual([r["email"] for r in ok], ["a@x.example"])
+        self.assertEqual(len(problems), 2)
+
+    def test_steps_spec_uses_verified_snippet_syntax(self):
+        from leadgen import stage_campaign as sc
+        spec = sc._steps_spec(sc.DEFAULT_SUBJECTS, sc.DEFAULT_DELAYS)
+        self.assertEqual(len(spec), 3)
+        self.assertIn('{{SNIPPET_1 | "', spec[0]["message"])
+        self.assertIn('{{SNIPPET_3 | "', spec[2]["message"])
+        self.assertNotIn("{{SNIPPET1", spec[0]["message"])   # bare/no-underscore form 400s
+        self.assertNotIn("UNSUBSCRIBE", spec[0]["message"])  # gdpr auto-unsub, no manual token
+
+    def test_stage_dry_run_builds_and_enrolls(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"
+        os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc, stage_campaign as sc
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_sc.jsonl")
+        self._write([
+            {"email": "a@x.example", "first_name": "A", "company": "C", "snippet1": "1", "snippet2": "2", "snippet3": "3"},
+            {"email": "b@x.example", "first_name": "B", "company": "C", "snippet1": "1", "snippet2": "2", "snippet3": "3"},
+        ])
+        res = sc.stage(self.csv, "779999", commit=False)
+        self.assertTrue(res["ok"]); self.assertEqual(res["status"], "DRAFT")
+        self.assertTrue(res["dry_run"]); self.assertEqual(res["enrolled"], 2)
+
+    def test_stage_refuses_primary_mailbox(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"
+        os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc, stage_campaign as sc
+        from leadgen.wp_client import ForbiddenAction
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_sc2.jsonl")
+        self._write([{"email": "a@x.example", "first_name": "A", "company": "C",
+                      "snippet1": "1", "snippet2": "2", "snippet3": "3"}])
+        with self.assertRaises(ForbiddenAction):
+            sc.stage(self.csv, "someone@iksula.com", commit=False)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
