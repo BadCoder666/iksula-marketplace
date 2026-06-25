@@ -1,0 +1,24 @@
+name: Validate skill standard
+on:
+  pull_request:
+    paths: ['plugins/iksula-agents/skills/**/SKILL.md']
+jobs:
+  run-log-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Every changed skill must include the run log
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          fail=0
+          for f in $(git diff --name-only "$base" "$head" | grep -E 'plugins/iksula-agents/skills/[^/]+/SKILL\.md$' || true); do
+            [ -f "$f" ] || continue
+            if ! grep -q '## Run log' "$f"; then
+              echo "::error file=$f::missing required '## Run log' section"; fail=1
+            fi
+          done
+          [ "$fail" = "0" ] || { echo "Skill standard check failed — add the run-log section."; exit 1; }
+          echo "OK: all changed skills include the run log."

@@ -91,3 +91,16 @@ Imperative phases. **Surface, don't decide; execute, don't re-plan.** Detail in 
 This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
 
 - gate: (inherited) G5 — paid spend inherits the media-budget gate → owner Vishal Sobti (U0B9NU5E4UF). Community replies are voice-governed (a human owns the byline voice).
+
+
+## Human gate(s)
+- gate: (inherited) G5 — paid spend inherits the media-budget gate → owner Vishal Sobti (U0B9NU5E4UF). Community replies are voice-governed (a human owns the byline voice).
+
+## Precondition — hard gate (do not bypass)
+Before publishing, read `_spine/_gates/`. If upstream gate **G7** (content calendar) is not RESOLVED ✅, STOP and tell the operator that G7 is still open. Do not publish ahead of the calendar approval.
+
+## At the gate
+When you reach this skill's human gate, say **"iksh, send this for approval"** — the conductor saves your output, posts it to the gatekeeper in `#ikshana-approvals`, and waits. After approval, **"iksh, advance"** releases the next step.
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

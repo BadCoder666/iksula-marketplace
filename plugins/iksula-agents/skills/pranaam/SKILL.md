@@ -97,3 +97,6 @@ behind `brain_io`; the recipe is in `${CLAUDE_PLUGIN_ROOT}/references/brain-acce
   name, the `brain_io` verb recipe, the module→writer table, and the four non-negotiables.
 - Live contracts (authoritative — read, don't duplicate): `brain_io-howto` and `raw-capture-howto`
   in `_brain/` (and `_brain-contract` / `_spine-howto` if present).
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

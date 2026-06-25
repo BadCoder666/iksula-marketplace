@@ -64,3 +64,13 @@ file name = vertical name only (no date suffix). Confirm the folder before savin
 This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
 
 - gate: G1 — which solution from the shortlist to productize → owner DJ (U0B0B545G9G) + Abhishek Jain (U078STK5YEN)
+
+
+## Human gate(s)
+- gate: G1 — which solution from the shortlist to productize → owner DJ (U0B0B545G9G) + Abhishek Jain (U078STK5YEN)
+
+## At the gate
+When you reach this skill's human gate, say **"iksh, send this for approval"** — the conductor saves your output, posts it to the gatekeeper in `#ikshana-approvals`, and waits. After approval, **"iksh, advance"** releases the next step.
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

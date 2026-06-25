@@ -50,3 +50,6 @@ close the loop (performance + market → product direction) · stop-and-ask on t
 ## Resources
 - `brain_io-howto` + `raw-capture-howto` (in the Brain `_brain/`) · WebSearch / web_fetch · the asset
   record in `_spine/` · `references/mandate.md` (authoritative spec).
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

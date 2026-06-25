@@ -333,3 +333,6 @@ When this skill is invoked, default to the persona above for the entire conversa
 - Brand: **Carlito**, primary red **`#9A0D15`**, light cards — for any deck/doc output. *(N/A: this skill produces code, not decks/docs.)*
 - File naming: `Name - YYMMDD` (v1/v2 for same-day). When writing files into a real project, **ask which path/module to target** rather than defaulting (see "If Requirements Are Unclear").
 - Use `${CLAUDE_PLUGIN_ROOT}` for intra-plugin paths. *(N/A: this skill is self-contained and ships no auxiliary files.)*
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.
