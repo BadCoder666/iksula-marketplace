@@ -24,10 +24,13 @@ def render_row(template, row):
     for it — i.e. the literal {{field}} would survive into the sent email.
     """
     leaks = []
+    lower = {str(k).lower(): v for k, v in (row or {}).items()}  # case-insensitive lookup
 
     def repl(m):
         field, fallback = m.group(1), m.group(2)
         val = row.get(field)
+        if val is None or str(val).strip() == "":
+            val = lower.get(field.lower())     # {{FIRST_NAME}} resolves a 'first_name' column
         if val is not None and str(val).strip() != "":
             return str(val)
         if fallback is not None:           # {{first_name|there}} -> 'there'

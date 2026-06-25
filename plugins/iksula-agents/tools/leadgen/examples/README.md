@@ -56,6 +56,27 @@ For a **private** sheet, either File → Download → CSV and use `--recipients`
 Claude Code — just give the agent the Sheet link and it downloads it via the Google Drive
 connector, then runs this tool and hands back the ready package + dropped-row report.
 
+### One command: clean → build the Woodpecker DRAFT → load recipients (still never sends)
+
+Add `--build-draft --enroll` to also create the Woodpecker draft and load the cleaned
+recipients into it — the whole "drop the sheet in → ready-and-loaded campaign" in one go.
+It **never sends** (the draft is non-sending; a human presses Run). Live writes require
+`--commit`; without it, it runs **dry** (simulated). It needs the kill switch on and a
+warmed, allow-listed, **secondary-domain** mailbox id.
+
+```bash
+# Email body should use Woodpecker snippet tokens, e.g. {{FIRST_NAME}} / {{COMPANY}}
+# (the merge check resolves them against your first_name / company columns, case-insensitively).
+WOODPECKER_AGENT_BUILD=on WOODPECKER_ALLOWED_MAILBOX_IDS=<mailbox_id> \
+python -m leadgen.sheet_to_ready --recipients leadgen/examples/dj_sheet.csv \
+  --subject leadgen/examples/dj_subject.txt --body leadgen/examples/dj_body.txt \
+  --suppress leadgen/examples/dj_suppress.csv \
+  --build-draft --enroll --mailbox <mailbox_id> --commit
+```
+Leave off `--commit` to preview (dry-run). After it runs, **a human opens the draft in
+Woodpecker and presses send** — that stays a human click. **Compliance note:** this path
+checks *data hygiene only*, **not lawful basis** — the sender owns permission + unsubscribe.
+
 ## Green-light path (shows the gate ALLOWing)
 
 `leads_cleared.csv` has a lawful basis recorded on each row. With the switches on and a

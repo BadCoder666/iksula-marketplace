@@ -179,6 +179,60 @@ class WoodpeckerClient:
             raise WoodpeckerError("live enroll is not enabled in this build (stage-zero today)")
         return {"enrolled": len(cleared_prospects), "dry_run": True}
 
+    # ---- ENROLL INTO A DRAFT (operator path: "AI preps, a human sends") --------
+    def enroll_to_draft(self, campaign_id, prospects):
+        """Add the operator's recipients to an OWNED, DRAFT/PAUSED campaign for the
+        sheet_to_ready "AI preps, a human sends" flow. This is NOT autonomous cold
+        sending: it writes a list the operator supplied into a NON-SENDING draft; a human
+        still presses send and owns the lawful basis for that send. It refuses RUNNING
+        (adding to RUNNING would send) and any non-owned campaign. There is STILL no send
+        verb anywhere — nothing here can send; sending requires /run, which is forbidden.
+        """
+        if not config.build_enabled():
+            raise ForbiddenAction("WOODPECKER_AGENT_BUILD is off — zero write calls permitted")
+        if not ledger.owns(campaign_id):
+            raise ForbiddenAction("campaign %s is not in the creation ledger (foreign/read-only)" % campaign_id)
+        prospects = [p for p in (prospects or []) if str(p.get("email") or p.get("Email") or "").strip()]
+        if not prospects:
+            return {"enrolled": 0, "reason": "no_prospects"}
+        # status MUST be DRAFT/PAUSED, re-checked immediately before enroll (never RUNNING —
+        # adding to RUNNING would send). Run it whenever we can reach the account (live, or
+        # dry-run with a transport stub) so the guard is exercised, not just on the live path.
+        if (not self.dry_run) or (self._transport is not None):
+            st = self.get_status(campaign_id)
+            if st not in config.NON_SENDING_STATUSES:
+                raise ForbiddenAction("campaign %s is %s; enroll only into DRAFT/PAUSED" % (campaign_id, st))
+        if self.dry_run:
+            return {"enrolled": len(prospects), "dry_run": True}
+        cid = int(campaign_id) if str(campaign_id).strip().isdigit() else campaign_id
+        body = {"campaign": {"campaign_id": cid}, "prospects": [self._prospect(p) for p in prospects]}
+        status, raw = self._http("POST", config.WP_ADD_PROSPECTS_PATH, body)
+        if status not in (200, 201):
+            raise WoodpeckerError("add_prospects returned HTTP %s" % status)
+        return {"enrolled": len(prospects), "campaign_id": str(campaign_id), "response": json.loads(raw or b"{}")}
+
+    @staticmethod
+    def _prospect(row):
+        def g(*names):
+            for n in names:
+                if n in row and row[n] not in (None, ""):
+                    return str(row[n])
+            return ""
+        p = {
+            "email": str(row.get("email") or row.get("Email") or "").strip().lower(),
+            "first_name": g("first_name", "First Name", "FIRST_NAME", "firstname"),
+            "last_name": g("last_name", "Last Name", "LAST_NAME", "lastname"),
+            "company": g("company", "Company", "COMPANY"),
+            "title": g("title", "Title", "TITLE"),
+        }
+        # per-prospect personalization snippets (Woodpecker snippet1..15), only if supplied —
+        # this is how each prospect carries their own bespoke body in a single-template step.
+        for i in range(1, 16):
+            k = "snippet%d" % i
+            if row.get(k) not in (None, ""):
+                p[k] = str(row[k])
+        return p
+
     # ---- guards ---------------------------------------------------------------
     def _assert_mailbox_isolated(self, mailbox_id):
         m = (mailbox_id or "").strip()

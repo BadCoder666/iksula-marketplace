@@ -129,9 +129,14 @@ def _render(s):
         for r in mp["leaking_rows"]:
             out.append("- row %s (%s): %s" % (r["row_index"], r.get("email", "?"), ", ".join(r["leaked_fields"])))
     out.append("\n## Next steps (human)")
-    out.append("1. Open Woodpecker, create the campaign with the copy in `email_copy.txt`.")
-    out.append("2. Import `recipients_ready.csv` as the prospect list.")
-    out.append("3. Review, then press send. (Make sure an unsubscribe is included and you're sending from a mailbox you're happy to send this volume from.)")
+    out.append("1. Open Woodpecker, create the campaign with the copy in `email_copy.txt` (or use `--build-draft`).")
+    out.append("2. Import `recipients_ready.csv` as the prospect list (or use `--enroll`).")
+    out.append("3. Review, then press send.")
+    out.append("\n> **You (the sender) own compliance for this send.** This tool checked **data hygiene** "
+               "(valid emails, no duplicates, your suppression list, merge fields) — it did **NOT** check "
+               "**lawful basis**. Before you send, make sure you have permission / legitimate interest to "
+               "email these people, a working **unsubscribe** is included, and you're sending from a mailbox "
+               "you're happy to send this volume from.")
     out.append("\n*Prepared by the Lead Gen agent — it cleaned, de-duplicated and validated the list; it did not send anything. The send is a human decision.*")
     return "\n".join(out) + "\n"
 
@@ -166,18 +171,72 @@ def build_draft(name, mailbox_id, subject, message_html, run_id=None, created_at
     return c.create_campaign(name, mailbox_id, settings, steps, run_id=run_id, created_at_utc=created_at_utc)
 
 
+def build_sequence_draft(name, mailbox_id, steps_spec, run_id=None, created_at_utc=None,
+                         dry_run=True, timezone="US/Eastern", daily_enroll=50):
+    """Create a MULTI-STEP Woodpecker DRAFT (a follow-up sequence) via the create-only client.
+
+    `steps_spec` is a list of dicts, one per EMAIL touch, in order:
+        {"subject": str, "message": html, "days_to_next": int}
+    `days_to_next` is the gap (in days) until the NEXT touch (ignored on the last step).
+    The bodies typically reference per-prospect snippets ({{SNIPPET1}}..) so each prospect
+    carries their own copy. Schema mirrors a live v2 campaign (verified 2026-06-24):
+    steps = START -> EMAIL(followup_after) -> EMAIL ... ; never sends (DRAFT)."""
+    import uuid
+    from .wp_client import WoodpeckerClient
+    WEEKDAYS = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
+    settings = {
+        "timezone": timezone, "prospect_timezone": False, "daily_enroll": daily_enroll,
+        "gdpr_unsubscribe": True, "list_unsubscribe": True,   # Woodpecker auto-appends a compliant unsubscribe link
+        "open_disabled_list": [], "auto_pause_prospect_from_domain_statuses": [],
+        "auto_pause_prospect_from_domain": None, "catch_all_verification_mode": "BALANCED",
+        "count_followup_delay_in_working_days": True,
+    }
+
+    def email_step(spec, followup):
+        return {
+            "id": str(uuid.uuid4()), "type": "EMAIL",
+            "followup_after": {"range": "DAY", "value": int(spec.get("days_to_next", 1))},
+            "delivery_time": {d: [{"from": "09:00", "to": "18:00"}] for d in WEEKDAYS},
+            "body": {"versions": [{"id": str(uuid.uuid4()), "version": "A",
+                                   "subject": spec["subject"], "message": spec["message"],
+                                   "signature": "SENDER", "track_opens": True}]},
+            "followup": followup,
+        }
+
+    followup = None
+    for spec in reversed(steps_spec):              # chain last -> first
+        followup = email_step(spec, followup)
+    steps = {"id": str(uuid.uuid4()), "type": "START", "followup": followup}
+
+    c = WoodpeckerClient(dry_run=dry_run)
+    return c.create_campaign(name, mailbox_id, settings, steps, run_id=run_id, created_at_utc=created_at_utc)
+
+
 def main(argv=None):
-    import argparse, sys
-    ap = argparse.ArgumentParser(description="Turn a recipient sheet + email copy into a ready-to-send package (no sending).")
+    import argparse, sys, uuid, csv as _csv
+    from datetime import datetime, timezone
+    ap = argparse.ArgumentParser(description="Sheet -> ready-to-send package; optionally build + load the Woodpecker DRAFT (never sends).")
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--recipients", help="CSV of recipients (must have an 'email' column)")
     src.add_argument("--sheet-url", dest="sheet_url",
                      help="Google Sheets link or id — fetched as CSV (the sheet must be shared 'Anyone with the link can view')")
-    ap.add_argument("--subject", required=True, help="subject template file ({{field}} tokens allowed)")
-    ap.add_argument("--body", required=True, help="email body template file ({{field}} tokens allowed)")
+    ap.add_argument("--subject", required=True, help="subject template file")
+    ap.add_argument("--body", required=True, help="email body template file (Woodpecker {{FIELD}} tokens; case-insensitive)")
     ap.add_argument("--suppress", help="optional CSV of emails to exclude (existing clients / opt-outs)")
     ap.add_argument("--out", default="ready_package", help="output folder for the package")
+    ap.add_argument("--build-draft", dest="build_draft", action="store_true",
+                    help="also create the Woodpecker DRAFT campaign (create-only; needs WOODPECKER_AGENT_BUILD=on + --mailbox)")
+    ap.add_argument("--enroll", action="store_true",
+                    help="also load the cleaned recipients INTO the draft (DRAFT only; never sends). Implies --build-draft")
+    ap.add_argument("--mailbox", help="warmed secondary-domain mailbox id for the draft sender (must be allow-listed)")
+    ap.add_argument("--name", help="campaign name (default '[LG-AGENT] sheet <id>')")
+    ap.add_argument("--commit", action="store_true",
+                    help="actually write to the LIVE Woodpecker account; without it, --build-draft/--enroll run DRY (simulated)")
     args = ap.parse_args(argv)
+    if args.enroll:
+        args.build_draft = True
+    if args.build_draft and not args.mailbox:
+        ap.error("--build-draft needs --mailbox <warmed secondary-domain mailbox id>")
 
     os.makedirs(args.out, exist_ok=True)
     if args.sheet_url:
@@ -196,6 +255,34 @@ def main(argv=None):
     print(json.dumps(s, indent=2, ensure_ascii=False))
     print("\n=== %s ===" % s["verdict"])
     print("Package written to: %s/  (recipients_ready.csv, email_copy.txt, READY_SUMMARY.md)" % args.out)
+
+    if args.build_draft:
+        if not s["ready"]:
+            print("\nNot building the draft: the package is NOT READY (fix the above first).")
+            return 2
+        from .wp_client import WoodpeckerClient, ForbiddenAction, WoodpeckerError
+        dry = not args.commit
+        run_id = uuid.uuid4().hex[:8]
+        name = args.name or ("[LG-AGENT] sheet " + run_id)
+        created = datetime.now(timezone.utc).isoformat()
+        print("\n%s Woodpecker DRAFT '%s' (sender mailbox %s)…" % ("Simulating" if dry else "Creating", name, args.mailbox))
+        try:
+            draft = build_draft(name, str(args.mailbox), subject, body, run_id=run_id, created_at_utc=created, dry_run=dry)
+        except (ForbiddenAction, WoodpeckerError) as e:
+            print("Draft refused/failed: %s" % e); return 2
+        cid = draft["campaign_id"]
+        print("  draft id=%s · status=%s · dry_run=%s" % (cid, draft["status"], draft["dry_run"]))
+        if args.enroll:
+            with open(os.path.join(args.out, "recipients_ready.csv"), encoding="utf-8-sig", newline="") as f:
+                rows = list(_csv.DictReader(f))
+            try:
+                en = WoodpeckerClient(dry_run=dry).enroll_to_draft(cid, rows)
+            except (ForbiddenAction, WoodpeckerError) as e:
+                print("Enroll refused/failed: %s" % e); return 2
+            print("  enrolled %s recipient(s) into the draft · dry_run=%s" % (en["enrolled"], en.get("dry_run", False)))
+        print("\nNEXT (human): open the draft in Woodpecker, review, and press Run/Send. The agent does NOT send.")
+        print("NOTE: this path checks data hygiene only — NOT lawful basis. You (the sender) are responsible")
+        print("      for permission/legitimate interest to email these recipients, plus a live unsubscribe.")
     return 0 if s["ready"] else 2
 
 
