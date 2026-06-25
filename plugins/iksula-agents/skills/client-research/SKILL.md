@@ -204,3 +204,6 @@ gate convention, when running inside the conductor; standalone, confirm with the
 - **Sibling iksula-agents (reuse, don't re-derive):** `research-solutions` (market/vertical depth) ·
   `solutions-architect-create` (turns the account fit into a pitch) · `lead-gen` (works the account as an
   ABM target) · `ai-transformation-consultant` (consumes the dossier when the engagement is an AI transformation).
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

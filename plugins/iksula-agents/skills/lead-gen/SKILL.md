@@ -110,3 +110,17 @@ This skill's output passes a human gate before it goes external / commits resour
 
 - gate: G6 — SQL acceptance (Sales/KAM accepts the meeting) → owner Vishal Sobti (U0B9NU5E4UF)
 - gate: G8 — lawful-basis / compliance sign-off before cold outreach → owner Vishal Sobti (U0B9NU5E4UF)
+
+
+## Human gate(s)
+- gate: G6 — SQL acceptance (Sales/KAM accepts the meeting) → owner Vishal Sobti (U0B9NU5E4UF)
+- gate: G8 — lawful-basis / compliance sign-off before cold outreach → owner Vishal Sobti (U0B9NU5E4UF)
+
+## Precondition — hard gate (do not bypass)
+Before any cold outreach, read `_spine/_gates/`. If gate **G8** (compliance/lawful-basis) is not RESOLVED ✅, STOP — fire G8 and wait for approval. Never cold-outreach ahead of G8.
+
+## At the gate
+When you reach this skill's human gate, say **"iksh, send this for approval"** — the conductor saves your output, posts it to the gatekeeper in `#ikshana-approvals`, and waits. After approval, **"iksh, advance"** releases the next step.
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

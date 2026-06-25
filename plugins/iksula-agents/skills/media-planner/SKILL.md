@@ -51,3 +51,17 @@ This skill's output passes a human gate before it goes external / commits resour
 
 - gate: G4 — distribution brief → owner Vishal Sobti (U0B9NU5E4UF)
 - gate: G5 — media plan + budget (commits spend) → owner Vishal Sobti (U0B9NU5E4UF)
+
+
+## Human gate(s)
+- gate: G4 — distribution brief → owner Vishal Sobti (U0B9NU5E4UF)
+- gate: G5 — media plan + budget (commits spend) → owner Vishal Sobti (U0B9NU5E4UF)
+
+## Precondition — hard gate (do not bypass)
+Before producing output, read the open-gates register `_spine/_gates/`. If upstream gate **G3** (thought-leadership voice) is not RESOLVED ✅, STOP and tell the operator that G3 is still open. This skill must not run ahead of its gate.
+
+## At the gate
+When you reach this skill's human gate, say **"iksh, send this for approval"** — the conductor saves your output, posts it to the gatekeeper in `#ikshana-approvals`, and waits. After approval, **"iksh, advance"** releases the next step.
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

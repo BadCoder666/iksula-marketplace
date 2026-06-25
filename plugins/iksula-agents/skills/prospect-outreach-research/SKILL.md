@@ -283,3 +283,13 @@ inside the conductor; standalone, confirm with the user in-session.
 - **Sibling iksula-agents (reuse, don't re-derive):** `client-research` (deep, post-engagement account
   intelligence — the warm-up handoff) · `solutions-architect-create` (turns fit into a pitch) · `lead-gen`
   (works the prospect as a funnel/ABM target).
+
+
+## Human gate(s)
+- gate: outreach approval — lawful-basis check before cold outreach → owner Vishal Sobti (U0B9NU5E4UF)
+
+## At the gate
+When you reach this skill's human gate, say **"iksh, send this for approval"** — the conductor saves your output, posts it to the gatekeeper in `#ikshana-approvals`, and waits. After approval, **"iksh, advance"** releases the next step.
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

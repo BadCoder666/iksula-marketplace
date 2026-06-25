@@ -357,3 +357,6 @@ Keep everything business-framed. State that effort bands assume Claude-assisted 
 - File naming: `<Client> Audit - YYMMDD.pptx` (`v2`/`v3` for same-day). **Ask the user which folder to save to** — never default.
 - Use `${CLAUDE_PLUGIN_ROOT}` for intra-plugin paths (e.g. the deck generator at `${CLAUDE_PLUGIN_ROOT}/skills/magento2-audit/scripts/build_audit_ppt.py`).
 - The full deck generator ships in `scripts/build_audit_ppt.py` — run it directly; do not paste it inline.
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.
