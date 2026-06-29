@@ -11,11 +11,16 @@ The Brain and Spine are files in the Google Shared Drive **"Iksula Agentic Org"*
 the Google Drive connector signed in as an **@iksula.com** Workspace account (never a personal
 Gmail). They are read on demand — never auto-loaded into a session.
 
-**Resolve folders via a seed file, NOT by folder name.** A folder-name search (`title = '_brain'`)
-returns nothing on this connector. Instead, `search_files: title contains 'brain_io-howto'` and read
-the newest result's **`parentId`** — that *is* the `_brain/` folder ID; reuse it for every later read.
-Resolve `_spine/` the same way via `title contains '_spine-howto'`. (The live `brain_io-howto` text
-also states both folder IDs, so don't hardcode them here.)
+**Resolve folders by FIXED ID — do not re-discover them every session** (re-discovery is the main
+cause of slow startup). Use these directly:
+- `_brain/` = `1EnymnhLIo-6hqqo_YuKQHpXd87E9NSzu`
+- `_spine/` = `1dxOnoCsysiP1nEUGrAakbeDNBtM2ewrc`
+
+Only if a direct read by ID errors (the folder moved) fall back to a seed-file search: `search_files:
+title contains 'brain_io-howto'` → its **`parentId`** is `_brain/`; `title contains '_spine-howto'` →
+`_spine/`. Always pass **`excludeContentSnippets: true`** and scope searches by `parentId` — never a
+whole-Drive title search (slow + heavy). A folder-name search (`title = '_brain'`) returns nothing on
+this connector.
 
 Access-confirming seeds present in `_brain/`: `voices-260606.md`, `brain_io-howto-*` (newest `-v4`),
 `_brain-contract.md`, `raw-capture-howto-260606.md`.
