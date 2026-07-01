@@ -3,7 +3,7 @@
   "owner": { "name": "Iksula" },
   "metadata": {
     "description": "Internal Iksula skill & agent marketplace. Subscribe once to receive the firm's standard-compliant skills and their updates.",
-    "version": "0.7.2"
+    "version": "0.7.3"
   },
   "plugins": [
     {
