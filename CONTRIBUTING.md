@@ -76,6 +76,12 @@ files must ask the user which folder to save to rather than defaulting.
 - Use `${CLAUDE_PLUGIN_ROOT}` for any intra-plugin paths. Never hardcode absolute paths.
 - kebab-case for all skill directory names.
 
+### 5b. Run log (MANDATORY, CI-enforced)
+Every skill MUST include a `## Run log (required)` section that logs each run to `_spine/_runs-log/` (time · skill · operator · output link). A GitHub Action (`validate-skill.yml`) **fails any PR** whose changed `SKILL.md` is missing this section.
+
+### 5c. Human gate (declare if applicable)
+If the skill produces output needing sign-off, it MUST declare each gate (`## Human gate(s)`: `gate: <id> — <what> → owner <name>(<slackid>)`). Hard-gated steps add a `## Precondition — hard gate` that refuses to run until the upstream gate is ✅.
+
 ### 6. PR checklist (maintainer verifies)
 - [ ] SKILL.md has third-person description with trigger phrases
 - [ ] Mandate uses PART A / PART B structure
@@ -83,6 +89,8 @@ files must ask the user which folder to save to rather than defaulting.
 - [ ] Any deck/doc output is brand-compliant (Carlito, #9A0D15)
 - [ ] Follows file/naming conventions; asks before saving
 - [ ] No hardcoded paths; uses `${CLAUDE_PLUGIN_ROOT}`
+- [ ] `## Run log (required)` section present (CI-enforced)
+- [ ] Human gate declared if the skill needs sign-off; hard-gate precondition added where applicable
 - [ ] `version` bumped in plugin.json + marketplace.json
 
 ## Consuming vs. contributing (read this first)

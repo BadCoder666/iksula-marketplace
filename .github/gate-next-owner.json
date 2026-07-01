@@ -1,0 +1,11 @@
+{
+  "_comment": "When a gate clears (✅), the iKshana listener DMs the NEXT step's owner (Slack user id). Terminal gates: next_owner_slack=null.",
+  "G1": { "next_step": "research-solutions / solutions-architect", "next_owner_slack": "U078STK5YEN" },
+  "G3": { "next_step": "media-planner (brief)",       "next_owner_slack": "U0B9NU5E4UF" },
+  "G4": { "next_step": "content-creator",             "next_owner_slack": "U0B9NU5E4UF" },
+  "G7": { "next_step": "media-planner (plan) → growth-hacker", "next_owner_slack": "U0B9NU5E4UF" },
+  "G5": { "next_step": "growth-hacker",               "next_owner_slack": "U0BCAA4QT9N" },
+  "G2": { "next_step": "publish (terminal)",          "next_owner_slack": null },
+  "G6": { "next_step": "loop close (terminal)",       "next_owner_slack": null },
+  "G8": { "next_step": "lead-gen outreach",           "next_owner_slack": "U0BCAA4QT9N" }
+}

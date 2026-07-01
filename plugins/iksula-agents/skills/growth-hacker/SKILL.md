@@ -91,3 +91,17 @@ Imperative phases. **Surface, don't decide; execute, don't re-plan.** Detail in 
 This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
 
 - gate: (inherited) G5 — paid spend inherits the media-budget gate → owner Vishal Sobti (U0B9NU5E4UF). Community replies are voice-governed (a human owns the byline voice).
+
+
+## Human gate(s)
+- gate: (inherited) G5 — paid spend inherits the media-budget gate → owner Vishal Sobti (U0B9NU5E4UF). Community replies are voice-governed (a human owns the byline voice).
+
+## Precondition — hard gate (do not bypass)
+Before producing output, read `_spine/_gates/` (Drive). If a `RESOLVED-…G7` (✅) record exists → proceed. If not → **STOP** and tell the operator that gate **G7** is still open. (The central iKshana listener writes the RESOLVED record when the gatekeeper approves in Slack.) Never run ahead of the gate.
+## On finish — open your gate (Drive only; the iKshana bot posts it)
+When you finish, do this yourself — you need only the **Drive** connector, NOT Slack:
+1. Save your output to **Published Outputs** (Shared Drive); copy the link.
+2. Write the `OPEN-<run-id>-<gate-id>-<YYMMDDHHMM>` record to `_spine/_gates/` with this **JSON body** (the listener parses it): `{"run":"<run-id>","gate":"<gate-id>","owner":"<gatekeeper Slack id; space- or comma-separate if more than one>","submitter":"<your own Slack id>","link":"<output link>"}`. `owner` = who approves; `submitter` = you (so the listener confirms back to you on approval).
+The central **iKshana listener** detects the new OPEN record and posts it to **#ikshana-approvals** as the **@iKshana bot** (the message ends with ✅ approve · ✍️ revise · ⏸ hold). You never post to Slack yourself.
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

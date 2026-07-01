@@ -19,10 +19,10 @@ load the operating contract, so everything you build next is Brain-aware by defa
   confirm the `_brain/` and `_spine/` stores are reachable, load the access contract + the
   non-negotiable rules, and announce readiness. After this runs, any skill or solution work in the
   session reads standing context from the Brain via `brain_io` instead of guessing.
-- **Scope (in):** check/establish Drive connectivity; verify the Brain and Spine folders; read the
-  contract files (`_brain-contract`, `brain_io-howto`, `raw-capture-howto`, `_spine-howto`);
-  inventory the available Brain modules; print a readiness report; set the session's operating
-  conventions.
+- **Scope (in):** check Drive connectivity; resolve the Brain/Spine by **fixed folder ID** (no
+  discovery search); load only the two startup contracts (`brain_io-howto` + `_brain-contract`) in
+  parallel — **lazy-load** `raw-capture-howto`/`_spine-howto` on demand; state the module inventory;
+  print a readiness report; set the session's operating conventions.
 - **Scope (out):** does no craft work — no content, no scoring, no research, no outreach. Does **not
   write** to the Brain or Spine (read-only). Does **not** approve gates. Does **not** download every
   module (context stays lean — modules are read on demand by the skills that need them).
@@ -36,46 +36,55 @@ load the operating contract, so everything you build next is Brain-aware by defa
 
 | Deliverable | Format | Notes |
 |-------------|--------|-------|
-| Session readiness report | chat message | States: connected account; `_brain/` + `_spine/` reachable (folder IDs verified); contracts loaded; the module inventory; the four non-negotiables now active. No files are written — this skill is read-only. |
+| Session readiness report | chat message | States: connected account; `_brain/` + `_spine/` reachable (fixed IDs); the two startup contracts loaded; the module inventory; the active rules (incl. plain Grade 6–8 US English). Read-only except the required run-log line. |
 
 ## Workflow
 
-Imperative steps for Claude. `search_files` and `download_file_content` are the Drive-connector calls
-behind `brain_io`; the recipe is in `${CLAUDE_PLUGIN_ROOT}/references/brain-access.md`, and the live
-`brain_io-howto` in `_brain/` is authoritative for the exact folder IDs and call signatures.
+Imperative steps for Claude. **Startup must be FAST — the fewest Drive round-trips possible.** Resolve
+by **fixed folder ID** (don't re-discover), load only what's needed at startup, batch reads in
+**parallel**, and **always** pass `excludeContentSnippets: true` so searches don't drag big payloads.
+`search_files` / `download_file_content` are the Drive-connector calls behind `brain_io`.
 
-0. **Check the connector.** Confirm the Google Drive connector is connected. If it is **not**, stop
-   and tell the user to connect it in **Cowork's connector settings** (in this CLI runtime: `/mcp` →
-   "claude.ai Google Drive"), signed in with their **@iksula.com Workspace account — not a personal
-   Gmail** (a personal Gmail cannot see the company Shared Drive). Do not fabricate Brain content;
-   ask and wait.
-1. **Verify the Brain.** Find it via a known **seed file**, not a folder-name search — the connector
-   returns files but does **not** return the `_brain/` folder by its title. Run `search_files: title
-   contains 'brain_io-howto'` and take the newest result (e.g. `brain_io-howto-260606-v4`). Its
-   **`parentId` IS the `_brain/` folder ID — reuse that ID for every later read.** Confirm `voices-*`
-   shares the same parent. If the search returns nothing, the connector is almost certainly on the
-   wrong account — surface that and stop.
-2. **Verify the Spine.** Same trick: `search_files: title contains '_spine-howto'`; its `parentId` is
-   the `_spine/` folder (which also holds `assets/` and `runs/`).
-3. **Load the contract.** `download_file_content` (raw base64 — **never** `read_file_content`, which
-   corrupts CSV) the live contracts in `_brain/`: the **newest `brain_io-howto`** (pick by latest
-   `modifiedTime` — same-day revisions carry a `-vN` suffix, e.g. `-v4`), plus **`raw-capture-howto`**,
-   **`_brain-contract`**, and the `_spine/` **`_spine-howto`**. Internalize the `get`/`list`/`write`
-   verbs and the four non-negotiables.
-4. **Inventory, don't ingest.** `list` the available modules so the session knows what exists —
+**Fixed store IDs — use directly, do NOT search to discover them:**
+- `_brain/` = `1EnymnhLIo-6hqqo_YuKQHpXd87E9NSzu`
+- `_spine/` = `1dxOnoCsysiP1nEUGrAakbeDNBtM2ewrc`
+
+0. **Check the connector.** Confirm the Google Drive connector is connected, signed in with the
+   **@iksula.com Workspace account — not a personal Gmail** (a personal Gmail cannot see the company
+   Shared Drive). If not, stop and tell the user to connect it (`/mcp` → "claude.ai Google Drive").
+   Don't fabricate Brain content; ask and wait.
+1. **One scoped search for the two startup files.** `search_files` with
+   `query: parentId = '1EnymnhLIo-6hqqo_YuKQHpXd87E9NSzu' and (title contains 'brain_io-howto' or title contains '_brain-contract')`
+   and **`excludeContentSnippets: true`**. From the result, pick the **newest `brain_io-howto-*`** and
+   the **newest `_brain-contract*`** by `modifiedTime` (same-day revisions carry a `-vN` suffix). This
+   single scoped call replaces the old whole-Drive seed searches.
+2. **Load those two files in PARALLEL.** Issue both `download_file_content` calls in one batch (raw
+   base64 — **never** `read_file_content`, which corrupts CSV): the newest **`brain_io-howto`** (the
+   folder IDs, the `get`/`list`/`write` verbs, the four non-negotiables, the module list) and the
+   newest **`_brain-contract`** (the session output rules — including the **plain Grade 6–8 US English**
+   rule). Internalize both.
+3. **Lazy-load the rest — do NOT load it now.** `raw-capture-howto` and `_spine-howto` are read **only
+   when a skill actually writes raw data, or the conductor runs.** Loading them at startup only adds
+   latency.
+4. **Module inventory — state it, don't query Drive.** The set is stable; name it from the contract:
    `voices`, `competitor-radar`, `icp-audience`, `proof-catalogue`, `channel-intel`,
-   `performance-analytics`, `method-vocab`, `solutions-catalogue`. Do **not** download their contents
-   now; they are read on demand by the skill that needs them (this keeps context lean).
-5. **Announce readiness.** Print the readiness report (PART B): the @iksula.com account in use, the
-   verified folder IDs, the contracts loaded, the module inventory, and the four active rules. End
-   with one line: *"iKshana online — Brain connected. Subsequent skills and solutions will read the
+   `performance-analytics`, `method-vocab`, `solutions-catalogue`. Each is read on demand by the skill
+   that needs it.
+5. **Announce readiness (short).** The @iksula.com account; `_brain/` + `_spine/` reachable (fixed
+   IDs); the two contracts loaded; the module inventory; and the active rules — **including plain Grade
+   6–8 US English for the whole session.** End: *"iKshana online — Brain connected. Skills read the
    Brain on demand."*
-6. **Set the session conventions.** From here, all work follows Brain/Hands/Spine: read via
-   `brain_io` (never raw paths); append-only writes; one writer per module (namespace shared feeds);
-   raw-first (dump raw to `_brain/_raw/` before synthesizing, never publish a number not traceable to
-   raw + source); route human gates to Slack `#agentic-org-requests` (✅ / ✍️ / ⏸); brand outputs
-   Carlito + primary red `#9A0D15` + light cards; name deliverables `Name - YYMMDD`; ask which folder
-   to save to.
+6. **Set the session conventions.** read via `brain_io` (never raw paths) · append-only, one-writer-
+   per-module, namespace shared feeds · raw-first to `_brain/_raw/` (never publish a number not
+   traceable to raw + source) · **verify a write by LISTING the folder (`parentId`,
+   `excludeContentSnippets: true`), not by name-searching** (the index lags for fresh files) · human
+   gates to Slack `#agentic-org-requests` (✅ / ✍️ / ⏸) · **reply in plain Grade 6–8 US English** ·
+   brand outputs Carlito + `#9A0D15` + light cards · name deliverables `Name - YYMMDD` · ask which
+   folder to save to.
+
+**Fallback (only if a fixed-ID read errors):** the folder may have moved — resolve by seed file
+(`search_files: title contains 'brain_io-howto'` → its `parentId` is `_brain/`; `title contains
+'_spine-howto'` → `_spine/`), then surface that the IDs changed so this skill can be updated.
 
 ## Operating principles
 
@@ -97,3 +106,6 @@ behind `brain_io`; the recipe is in `${CLAUDE_PLUGIN_ROOT}/references/brain-acce
   name, the `brain_io` verb recipe, the module→writer table, and the four non-negotiables.
 - Live contracts (authoritative — read, don't duplicate): `brain_io-howto` and `raw-capture-howto`
   in `_brain/` (and `_brain-contract` / `_spine-howto` if present).
+
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

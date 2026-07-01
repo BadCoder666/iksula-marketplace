@@ -111,4 +111,15 @@ This skill's output passes a human gate before it goes external / commits resour
 - gate: G6 — SQL acceptance (Sales/KAM accepts the meeting) → owner Vishal Sobti (U0B9NU5E4UF)
 - gate: G8 — lawful-basis / compliance sign-off before cold outreach → owner Vishal Sobti (U0B9NU5E4UF)
 
-> **What G8 gates — and what it does NOT.** G8 gates **sending cold outreach** (a human pressing **Run**) and the **autonomous §5b** funnel-staging path. It does **NOT** gate the **operator §5c path** ("stage/create a Woodpecker campaign from this sheet"). Operator staging **builds a non-sending DRAFT and enrolls** it — nothing leaves — so a missing `RESOLVED-…G8` record is **not** a reason to stop it. On an operator "stage a campaign" request, **do the §5c data-hygiene work and build the draft** (US-only jurisdiction filter → Zoho suppression → staged DRAFT); the human owns lawful basis when they press Run. **Do not hard-halt operator staging waiting for a G8 record** — G8 blocks the *send*, not the *draft*. (Read-only prep — priming, funnel reporting, drafting — is never gated either.)
+## Precondition — hard gate (do not bypass)
+Before producing output, read `_spine/_gates/` (Drive). If a `RESOLVED-…G8` (✅) record exists → proceed. If not → **STOP** and tell the operator that gate **G8** is still open. (The central iKshana listener writes the RESOLVED record when the gatekeeper approves in Slack.) Never run ahead of the gate.
+
+> **EXCEPTION — the operator §5c staging path is NOT gated by this precondition.** This precondition (and G8) gate **producing external output / sending cold outreach** — the autonomous §5b path and a human pressing **Run**. The operator §5c path ("stage/create a Woodpecker campaign from this sheet") **builds a non-sending DRAFT and enrolls it — nothing leaves**. So on an operator "stage a campaign" request, do **NOT** stop for a missing `RESOLVED-…G8` record: do the §5c data-hygiene work (US-only jurisdiction filter → Zoho suppression → staged DRAFT) and build the draft — the human owns lawful basis when they press **Run**. G8 blocks the *send*, not the *draft*. (Read-only prep — priming, funnel reporting, drafting — is likewise never gated.)
+
+## On finish — open your gate (Drive only; the iKshana bot posts it)
+When you finish, do this yourself — you need only the **Drive** connector, NOT Slack:
+1. Save your output to **Published Outputs** (Shared Drive); copy the link.
+2. Write the `OPEN-<run-id>-<gate-id>-<YYMMDDHHMM>` record to `_spine/_gates/` with this **JSON body** (the listener parses it): `{"run":"<run-id>","gate":"<gate-id>","owner":"<gatekeeper Slack id; space- or comma-separate if more than one>","submitter":"<your own Slack id>","link":"<output link>"}`. `owner` = who approves; `submitter` = you (so the listener confirms back to you on approval).
+The central **iKshana listener** detects the new OPEN record and posts it to **#ikshana-approvals** as the **@iKshana bot** (the message ends with ✅ approve · ✍️ revise · ⏸ hold). You never post to Slack yourself.
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

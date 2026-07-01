@@ -50,3 +50,15 @@ Authority first; the deletion test; one arguable thesis; white space at the seam
 This skill's output passes a human gate before it goes external / commits resources. The Hand **declares** the gate; the **iKshana conductor enforces** it (posts to `#ikshana-approvals`, logs `_spine/_gates/`, waits for ✅ approve / ✍️ revise / ⏸ hold). Do not bypass a gate.
 
 - gate: G3 — byline voice + claims before publishing → owner DJ (U0B0B545G9G)
+
+
+## Human gate(s)
+- gate: G3 — byline voice + claims before publishing → owner DJ (U0B0B545G9G)
+
+## On finish — open your gate (Drive only; the iKshana bot posts it)
+When you finish, do this yourself — you need only the **Drive** connector, NOT Slack:
+1. Save your output to **Published Outputs** (Shared Drive); copy the link.
+2. Write the `OPEN-<run-id>-<gate-id>-<YYMMDDHHMM>` record to `_spine/_gates/` with this **JSON body** (the listener parses it): `{"run":"<run-id>","gate":"<gate-id>","owner":"<gatekeeper Slack id; space- or comma-separate if more than one>","submitter":"<your own Slack id>","link":"<output link>"}`. `owner` = who approves; `submitter` = you (so the listener confirms back to you on approval).
+The central **iKshana listener** detects the new OPEN record and posts it to **#ikshana-approvals** as the **@iKshana bot** (the message ends with ✅ approve · ✍️ revise · ⏸ hold). You never post to Slack yourself.
+## Run log (required)
+On finish, log this run: create one file in the Spine `_spine/_runs-log/` (folder ID `1pfZ1UKFvE4BHW2Vold8S75lx1g0bLHvs`) named `<YYMMDD-HHMM>-<skill>-<operator>.md`, with one line — `timestamp · skill · operator · output-link`. Create-only; never skip. This is how iKshana sees which flows are being used.

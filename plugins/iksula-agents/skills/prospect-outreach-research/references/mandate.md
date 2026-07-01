@@ -21,7 +21,7 @@ messages**. Goal: let a seller decide *is this worth pursuing* and *how do I ope
 | Mode | Trigger | Input | Output | Cap |
 |------|---------|-------|--------|-----|
 | **SINGLE** | one named prospect | company · site · LinkedIn URL | `.docx` dossier + 1-page brief + 5 messages | — |
-| **BULK** | a shortlist | `.xlsx`, one row/prospect (company · site · LinkedIn) | new `Prospect Research` worksheet in a **dated copy** of the input file | **≤10 per run, paced** |
+| **BULK** | a shortlist (any length) | `.xlsx`, one row/prospect (company · site · LinkedIn) | new `Prospect Research` worksheet in a **dated copy** of the input file | **batches of 10, paced; auto-loops with a short break between batches; HARD STOP at 200/run; max 200 per rolling 4h** |
 
 ## Scope
 **In:**
@@ -47,10 +47,16 @@ The warm-up handoff to `client-research` is where account memory gets written.
 **External:** LinkedIn **Sales Navigator** via the logged-in browser session (role, activity,
 connection-degree, shared connections); public web for company/site/news/platform.
 
-## Account-safety rule (LinkedIn)
-Cap bulk at ~10 profiles/run; pace visits with a pause between each. High-volume rapid visits risk a
-LinkedIn warning/restriction on the user's real account. Throughput never beats account standing.
-Public/professional information only.
+## Account-safety rule (LinkedIn) + bulk limits
+Process bulk in **batches of 10 profiles**, pacing visits with a pause between each profile, and a short
+break (default **5 minutes**) between batches. **Auto-loop** until the file is exhausted (the user never
+pre-splits it), writing each batch into the output as it completes (incremental save). Enforce two hard
+limits: a **HARD STOP at 200 prospects per run**, and **no more than 200 prospects per rolling 4-hour
+window** — tracked in a small **local run-log** (timestamp + count per batch). At intake, sum the last
+4 hours from the run-log: if ≥200, do not run and give the earliest resume time; if a partial budget
+remains, process only up to it. The run-log is an agent-side guardrail, not a system lock — honour it and
+never bypass it to finish faster. If LinkedIn shows a checkpoint or rate/security warning, STOP, save
+progress, and tell the user. Throughput never beats account standing. Public/professional information only.
 
 ## Gate
 One human gate at intake (scope/mode/inputs/batch). Routes to Slack `#agentic-org-requests`
@@ -60,5 +66,5 @@ One human gate at intake (scope/mode/inputs/batch). Routes to Slack `#agentic-or
 - Mode and inputs confirmed; entity/market unambiguous.
 - Every fact sourced; estimates (revenue) and inferences (PIM, stack) flagged; nothing fabricated.
 - Single: dossier + brief + 5 messages rendered; folder confirmed. Bulk: dated copy written with the new
-  worksheet; original untouched.
+  worksheet (written incrementally, batch by batch, until the whole file is processed); original untouched.
 - No Brain/Spine writes performed. Warm prospects flagged for `client-research`.
