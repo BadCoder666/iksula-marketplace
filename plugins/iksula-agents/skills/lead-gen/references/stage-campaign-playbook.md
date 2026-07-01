@@ -59,8 +59,11 @@ you didn't create.
 6. **Build + enroll — USE THE CLI, don't hand-build the API call.** The schema is fiddly and already encoded:
    ```
    WOODPECKER_AGENT_BUILD=on WOODPECKER_ALLOWED_MAILBOX_IDS=779855 \
-   python -m leadgen.stage_campaign --recipients recipients.csv --mailbox 779855
+   python -m leadgen.stage_campaign --recipients recipients.csv --mailbox 779855 \
+     --sender-name "Vishal Sobti" --sender-title "Partnerships"
    ```
+   (`--sender-name/--sender-title` fill the one template signature — set them to the **mailbox owner** so the
+   signature matches the From. The copy's own sign-off is stripped automatically.)
    That runs **DRY** (nothing written). Show the operator 2–3 rendered sample sequences. On their "go", re-run with
    `--commit` to create the live DRAFT and enroll everyone (batched). It prints the campaign id.
 
@@ -88,6 +91,18 @@ you didn't create.
 - **COQL** IN-clause limit is **100**; suppression queries run **sequentially**, never in parallel.
 - **Mailbox** must be a warmed **secondary** domain in the allow-list; primary `@iksula.com` is refused by
   construction.
+- **Newlines collapse → wall of text (verified live 1 Jul 2026).** Woodpecker **drops raw `\n` newlines** when it
+  renders a snippet value into the HTML body, so copy that looks nicely paragraphed in the CSV arrives as one
+  unbroken block in the inbox. `stage_campaign.paragraphize` fixes this automatically — it converts the author's
+  blank-line breaks to `<br><br>` and single newlines to `<br>` (and, for a single-blob message with no newlines,
+  segments greeting/body/CTA). Never rely on bare newlines for structure. **Still preview one rendered email on the
+  first campaign** to confirm the `<br>`s render (only the Woodpecker UI shows the final render).
+- **One signature, and it must match the sender.** The step template appends **one** signature + the legally
+  required postal-address line (Woodpecker auto-appends unsubscribe). So the **copy must be sign-off-free** —
+  `stage_campaign.strip_signoff` removes a trailing valediction (`Best,\n<name>` …) so it can't double the
+  template's signature or clash names. Pass `--sender-name "<mailbox owner>" --sender-title "<title>"` so the
+  signature matches the **From** address (a body signed by a different person than the sending mailbox hurts trust
+  and deliverability).
 
 ## Compliance note (say this to the operator)
 This operator path checks **data hygiene only — NOT lawful basis**. The sender owns permission / legitimate
