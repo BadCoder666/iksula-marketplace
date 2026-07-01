@@ -59,11 +59,12 @@ you didn't create.
 6. **Build + enroll — USE THE CLI, don't hand-build the API call.** The schema is fiddly and already encoded:
    ```
    WOODPECKER_AGENT_BUILD=on WOODPECKER_ALLOWED_MAILBOX_IDS=779855 \
-   python -m leadgen.stage_campaign --recipients recipients.csv --mailbox 779855 \
-     --sender-name "Vishal Sobti" --sender-title "Partnerships"
+   python -m leadgen.stage_campaign --recipients recipients.csv --mailbox 779855
    ```
-   (`--sender-name/--sender-title` fill the one template signature — set them to the **mailbox owner** so the
-   signature matches the From. The copy's own sign-off is stripped automatically.)
+   **Do NOT pass `--sender-name`/`--postal-address` unless the sending mailbox has no account signature.** By
+   default the body carries **no hard-coded signature** — Woodpecker auto-appends the sending mailbox's own account
+   signature (name/title/company/postal address), so a hard-coded one would duplicate it and show the wrong name if
+   the send mailbox differs. The copy's own sign-off is stripped automatically.
    That runs **DRY** (nothing written). Show the operator 2–3 rendered sample sequences. On their "go", re-run with
    `--commit` to create the live DRAFT and enroll everyone (batched). It prints the campaign id.
 
@@ -71,11 +72,13 @@ you didn't create.
    `email_account_ids` is `[<mailbox>]`, and there are **3 EMAIL steps**. `GET /rest/v1/prospects?campaigns_id=<id>`
    → the expected count, and `snippet1` is populated on a sample (proves per-prospect copy loaded).
 
-8. **Hand off — the human checklist.** Before anyone presses Run: a real **physical postal address** in the footer
-   (pass `--postal-address "<addr>"`; if omitted the line is dropped and `stage` prints a CAN-SPAM warning — a valid
-   postal address is legally required for US commercial email, so omitting it is a sender's compliance call), a real
-   sender title (`--sender-title`, else `[Title]`), a **warmed** mailbox, a **ramp** (don't blast — `daily_enroll`
-   throttles; spread multi-contact companies across days), review the low-confidence copy, send a seed test. Then a
+8. **Hand off — the human checklist.** Before anyone presses Run: the **sending mailbox has a complete account
+   signature** configured in Woodpecker (name, title, company, and a **physical postal address** — CAN-SPAM requires
+   the address for US commercial email; the auto-appended account signature is what carries it, so no hard-coded
+   footer is needed), a **secondary-domain** mailbox that's **warmed** (never a primary `@iksula.com` address — cold
+   volume there risks the whole corporate domain's reputation), a **ramp** (don't blast — `daily_enroll` throttles;
+   spread multi-contact companies across days), review the low-confidence copy, send a seed test **and confirm the
+   signature renders as the right sender**. Then a
    human presses **Run**. The agent never does.
 
 ## Hard gotchas (verified live 24 Jun 2026 — these cost several HTTP 400s to learn)
