@@ -112,12 +112,14 @@ you didn't create.
   just confirm those slots aren't fields the account relies on elsewhere before a large run.
 - **Preview one rendered email in the Woodpecker UI on the first campaign — always.** Only the UI shows the true
   render; the API read is not enough (an API GET shows `\n`, which is ambiguous). Verify before scaling.
-- **One signature, and it must match the sender.** The step template appends **one** signature + the legally
-  required postal-address line (Woodpecker auto-appends unsubscribe). So the **copy must be sign-off-free** —
-  `stage_campaign.strip_signoff` removes a trailing valediction (`Best,\n<name>` …) so it can't double the
-  template's signature or clash names. Pass `--sender-name "<mailbox owner>" --sender-title "<title>"` so the
-  signature matches the **From** address (a body signed by a different person than the sending mailbox hurts trust
-  and deliverability).
+- **Let the SENDER's account signature sign the email — don't hard-code one (verified live 1 Jul 2026).**
+  Woodpecker **auto-appends the sending mailbox's own account signature** (name/title/company/postal address). A
+  hard-coded footer therefore *duplicates* it and shows the **wrong name** the moment the send mailbox differs from
+  the one staged (e.g. staged as Vishal, sent from Sam → body says Vishal, Woodpecker appends Sam). So by default
+  `stage_campaign` emits **no footer** — `strip_signoff` still removes the copy's own valediction, leaving clean
+  paragraphs, and the real sender's account signature does the signing. **Ensure each sending mailbox has an account
+  signature configured (name + physical postal address for CAN-SPAM).** Only pass `--sender-name` / `--postal-address`
+  for a mailbox with **no** account signature.
 
 ## Compliance note (say this to the operator)
 This operator path checks **data hygiene only — NOT lawful basis**. The sender owns permission / legitimate
