@@ -321,7 +321,24 @@ class StageCampaignTests(unittest.TestCase):
         f = sc._footer("Vishal Sobti", "Partnerships")
         self.assertIn("Vishal Sobti, Partnerships", f)
         self.assertNotIn("[Sender Name]", f)
-        self.assertIn("[REGISTERED POSTAL ADDRESS REQUIRED BEFORE SEND]", f)
+
+    def test_footer_postal_address_is_opt_in(self):
+        from leadgen import stage_campaign as sc
+        # default: NO postal-address line (the operator chose to omit it)
+        self.assertNotIn("Iksula &mdash;", sc._footer("V"))
+        self.assertNotIn("REGISTERED POSTAL", sc._footer("V"))
+        # when supplied, it renders
+        f = sc._footer("V", None, "123 Real St, Boston, MA 02110, USA")
+        self.assertIn("123 Real St, Boston, MA 02110, USA", f)
+
+    def test_stage_warns_and_omits_postal_by_default(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"; os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc, stage_campaign as sc
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_postal.jsonl")
+        self._write([{"email": "a@x.example", "first_name": "A", "company": "C",
+                      "snippet1": "Hi A,\n\nBody. Call?", "snippet2": "s2", "snippet3": "s3"}])
+        s = sc.stage(self.csv, "779999", commit=False)
+        self.assertFalse(s["has_postal_address"])
 
     def test_paragraphize_is_idempotent_and_safe(self):
         from leadgen import stage_campaign as sc
@@ -379,7 +396,6 @@ class StageCampaignTests(unittest.TestCase):
         spec = sc._steps_spec(sc.DEFAULT_SUBJECTS, sc.DEFAULT_DELAYS)
         msg = spec[0]["message"]
         self.assertIn("line-height", msg)                            # breathing room, not a wall
-        self.assertIn("[REGISTERED POSTAL ADDRESS REQUIRED BEFORE SEND]", msg)  # closing ] present
         self.assertEqual(msg.count("<div"), msg.count("</div"))      # balanced wrappers
 
 

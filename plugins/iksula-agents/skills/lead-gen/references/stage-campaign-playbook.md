@@ -71,8 +71,10 @@ you didn't create.
    `email_account_ids` is `[<mailbox>]`, and there are **3 EMAIL steps**. `GET /rest/v1/prospects?campaigns_id=<id>`
    → the expected count, and `snippet1` is populated on a sample (proves per-prospect copy loaded).
 
-8. **Hand off — the human checklist.** Before anyone presses Run: real **physical postal address** in the footer
-   (replace `[REGISTERED POSTAL ADDRESS…]`), a **warmed** mailbox, a **ramp** (don't blast — `daily_enroll`
+8. **Hand off — the human checklist.** Before anyone presses Run: a real **physical postal address** in the footer
+   (pass `--postal-address "<addr>"`; if omitted the line is dropped and `stage` prints a CAN-SPAM warning — a valid
+   postal address is legally required for US commercial email, so omitting it is a sender's compliance call), a real
+   sender title (`--sender-title`, else `[Title]`), a **warmed** mailbox, a **ramp** (don't blast — `daily_enroll`
    throttles; spread multi-contact companies across days), review the low-confidence copy, send a seed test. Then a
    human presses **Run**. The agent never does.
 

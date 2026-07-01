@@ -36,15 +36,21 @@ DEFAULT_SUBJECTS = (
 DEFAULT_DELAYS = (3, 4, 1)   # days to the next step (last is ignored)
 
 
-def _footer(sender_name="[Sender Name]", sender_title="[Title]"):
-    """The uniform signature + legally-required postal-address block appended after each
-    personalized body. The copy itself is stripped of its own sign-off (see strip_signoff) so
-    this is the ONE signature. Woodpecker auto-appends the unsubscribe link (gdpr_unsubscribe)."""
+def _footer(sender_name="[Sender Name]", sender_title="[Title]", postal_address=None):
+    """The uniform signature appended after each personalized body. The copy itself is stripped of
+    its own sign-off (see strip_signoff) so this is the ONE signature. Woodpecker auto-appends the
+    unsubscribe link (gdpr_unsubscribe).
+
+    postal_address: a valid physical postal address is a CAN-SPAM REQUIREMENT for US commercial
+    email. If given, it renders as the address line; if None, the line is omitted — which is NOT
+    CAN-SPAM compliant, so `stage`/`main` warn when it's absent."""
     sig = sender_name + ((", " + sender_title) if sender_title else "")
-    return ('<p style="margin:18px 0 0 0">--<br>%s<br>'
-            'Iksula | <a href="https://www.iksula.com">iksula.com</a></p>'
-            '<p style="font-size:11px;color:#888888;margin:10px 0 0 0">Iksula &mdash; '
-            '[REGISTERED POSTAL ADDRESS REQUIRED BEFORE SEND]</p>') % sig
+    footer = ('<p style="margin:18px 0 0 0">--<br>%s<br>'
+              'Iksula | <a href="https://www.iksula.com">iksula.com</a></p>') % sig
+    if postal_address:
+        footer += ('<p style="font-size:11px;color:#888888;margin:10px 0 0 0">Iksula &mdash; %s</p>'
+                   % postal_address)
+    return footer
 
 
 FOOTER = _footer()   # default (placeholder sender); kept as the module-level default
@@ -237,7 +243,7 @@ def _steps_spec_paragraphed(subjects, delays, slots, footer):
 
 def stage(recipients_csv, mailbox, name=None, commit=False, timezone="US/Eastern",
           daily_enroll=50, subjects=DEFAULT_SUBJECTS, delays=DEFAULT_DELAYS, batch=100,
-          sender_name=None, sender_title=None):
+          sender_name=None, sender_title=None, postal_address=None):
     """Build the 3-step DRAFT and enroll. Returns a summary dict. Never sends.
 
     Each prospect's three messages are split into paragraphs; the template renders one <p> per
@@ -274,7 +280,7 @@ def stage(recipients_csv, mailbox, name=None, commit=False, timezone="US/Eastern
     run_id = uuid.uuid4().hex[:8]
     name = name or ("[LG-AGENT] CFO 3-step " + run_id)
     created = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    footer = _footer(sender_name or "[Sender Name]", sender_title or "[Title]")
+    footer = _footer(sender_name or "[Sender Name]", sender_title or "[Title]", postal_address)
     draft = s2r.build_sequence_draft(name, str(mailbox),
                                      _steps_spec_paragraphed(subjects, delays, slots, footer),
                                      run_id=run_id, created_at_utc=created, dry_run=dry,
@@ -287,7 +293,7 @@ def stage(recipients_csv, mailbox, name=None, commit=False, timezone="US/Eastern
         enrolled += en["enrolled"]
     return {"ok": True, "campaign_id": cid, "status": draft["status"], "dry_run": dry,
             "enrolled": enrolled, "dropped": len(problems), "problems": problems[:10], "name": name,
-            "slots": slots}
+            "slots": slots, "has_postal_address": bool(postal_address)}
 
 
 def main(argv=None):
@@ -302,11 +308,14 @@ def main(argv=None):
     ap.add_argument("--daily-enroll", type=int, default=50)
     ap.add_argument("--sender-name", help="fills the signature (else '[Sender Name]'); should match the mailbox owner")
     ap.add_argument("--sender-title", help="fills the signature title (else '[Title]')")
+    ap.add_argument("--postal-address", help="physical postal address for the footer (CAN-SPAM requirement for "
+                                             "US commercial email); omitted if not given")
     args = ap.parse_args(argv)
     try:
         s = stage(args.recipients, args.mailbox, name=args.name, commit=args.commit,
                   timezone=args.timezone, daily_enroll=args.daily_enroll,
-                  sender_name=args.sender_name, sender_title=args.sender_title)
+                  sender_name=args.sender_name, sender_title=args.sender_title,
+                  postal_address=args.postal_address)
     except (ForbiddenAction, WoodpeckerError, ValueError) as e:
         print("REFUSED/FAILED: %s" % e); return 2
     if not s["ok"]:
@@ -319,9 +328,12 @@ def main(argv=None):
         print("dropped %d row(s) for empty/unsafe copy (first few):" % s["dropped"])
         for i, e, why in s["problems"]:
             print("  row %d (%s): %s" % (i, e, why))
-    print("\nNEXT (human): open the draft in Woodpecker, add the real postal address to the footer, send a")
-    print("test to yourself, confirm the unsubscribe link, then press Run on a warmed mailbox in a ramp.")
-    print("The agent does NOT send. This path checks data hygiene only — you own lawful basis + unsubscribe.")
+    if not s.get("has_postal_address"):
+        print("\nWARNING: no --postal-address set, so the footer has NO physical postal address. A valid postal")
+        print("address is a CAN-SPAM requirement for US commercial email; sending without one is non-compliant.")
+    print("\nNEXT (human): open the draft in Woodpecker, send a test to yourself, confirm the unsubscribe link,")
+    print("then press Run on a warmed mailbox in a ramp. The agent does NOT send. This path checks data hygiene")
+    print("only — you own lawful basis, the postal address, and unsubscribe.")
     return 0
 
 
