@@ -231,6 +231,116 @@ class StageCampaignTests(unittest.TestCase):
         with self.assertRaises(ForbiddenAction):
             sc.stage(self.csv, "someone@iksula.com", commit=False)
 
+    def test_paragraphize_breaks_wall_of_text(self):
+        from leadgen import stage_campaign as sc
+        msg = ("Hi Zainab, I came across your profile and was impressed by your work as Senior "
+               "Conference Producer at eTail. We help retail and DTC brands accelerate commerce "
+               "transformation. Clients typically see 15-25% improvements in digital conversion. "
+               "Could we find 20 minutes next week?")
+        out = sc.paragraphize(msg)
+        self.assertIn("<br><br>", out)                       # got paragraph breaks
+        self.assertTrue(out.startswith("Hi Zainab,"))        # greeting leads the first paragraph
+        self.assertTrue(out.rstrip().endswith("?"))          # CTA question is its own last paragraph
+        self.assertEqual(out.count("<br><br>"), 2)           # greeting | body | CTA -> 3 paras
+        self.assertIn("15-25%", out)                         # did NOT split on the numeric range
+
+    def test_paragraphize_preserves_author_newlines(self):
+        # The real-world case: copy already has \n\n paragraph breaks (which Woodpecker collapses
+        # in HTML) plus a two-line sign-off. We must convert them to explicit <br> tags.
+        from leadgen import stage_campaign as sc
+        copy = ("Hi Paul,\n\nI came across your profile at Wayfair.\n\n"
+                "We help brands accelerate commerce. Clients see 15-25% gains.\n\n"
+                "Best,\nRohit - Iksula")
+        out = sc.paragraphize(copy)
+        self.assertNotIn("\n", out)                              # no raw newlines survive
+        self.assertEqual(out.count("<br><br>"), 3)               # 4 paragraphs -> 3 gaps
+        self.assertTrue(out.endswith("Best,<br>Rohit - Iksula"))  # single newline -> single <br>
+        self.assertIn("15-25%", out)
+
+    def test_strip_signoff_removes_trailing_signature(self):
+        from leadgen import stage_campaign as sc
+        # one-paragraph sign-off ("Best,\nRohit - Iksula") -> gone, body preserved
+        c1 = "Hi Paul,\n\nWe help brands grow.\n\nWould you be open to 20 minutes?\n\nBest,\nRohit - Iksula"
+        out = sc.strip_signoff(c1)
+        self.assertTrue(out.rstrip().endswith("20 minutes?"))
+        self.assertNotIn("Rohit", out)
+        self.assertNotIn("Best,", out)
+        # valediction and name in SEPARATE paragraphs -> both removed
+        c2 = "Hi A,\n\nBody here.\n\nRegards,\n\nJane Doe"
+        out2 = sc.strip_signoff(c2)
+        self.assertTrue(out2.rstrip().endswith("Body here."))
+        self.assertNotIn("Jane", out2); self.assertNotIn("Regards", out2)
+
+    def test_strip_signoff_leaves_normal_copy_alone(self):
+        from leadgen import stage_campaign as sc
+        # no sign-off -> unchanged
+        c = "Hi A,\n\nThanks to your team's great work this quarter, we should talk. Free Tuesday?"
+        self.assertEqual(sc.strip_signoff(c), c)   # mid-sentence 'Thanks' is NOT a valediction line
+        # stage() strips the sign-off so it can't double the template signature
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"
+        os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc, wp_client
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_sig.jsonl")
+        cap = {}
+        orig = wp_client.WoodpeckerClient.enroll_to_draft
+        wp_client.WoodpeckerClient.enroll_to_draft = lambda self, cid, rows: (cap.setdefault("r", []).extend(rows), {"enrolled": len(rows), "dry_run": True})[1]
+        self._write([{"email": "a@x.example", "first_name": "A", "company": "C",
+                      "snippet1": "Hi A,\n\nBody.\n\nOpen to a call?\n\nBest,\nRohit - Iksula",
+                      "snippet2": "s2", "snippet3": "s3"}])
+        try:
+            sc.stage(self.csv, "779999", commit=False, sender_name="Vishal Sobti", sender_title="Partnerships")
+        finally:
+            wp_client.WoodpeckerClient.enroll_to_draft = orig
+        self.assertNotIn("Rohit", cap["r"][0]["snippet1"])   # copy sign-off stripped before enroll
+
+    def test_footer_fills_sender_identity(self):
+        from leadgen import stage_campaign as sc
+        f = sc._footer("Vishal Sobti", "Partnerships")
+        self.assertIn("Vishal Sobti, Partnerships", f)
+        self.assertNotIn("[Sender Name]", f)
+        self.assertIn("[REGISTERED POSTAL ADDRESS REQUIRED BEFORE SEND]", f)
+
+    def test_paragraphize_is_idempotent_and_safe(self):
+        from leadgen import stage_campaign as sc
+        self.assertEqual(sc.paragraphize(""), "")
+        self.assertEqual(sc.paragraphize("One short line."), "One short line.")   # single sentence untouched
+        pre = "Line one.<br><br>Line two."
+        self.assertEqual(sc.paragraphize(pre), pre)                               # already formatted -> unchanged
+        # never introduces a token-breaking char
+        out = sc.paragraphize("Hi A. We do X. Worth a call?")
+        for bad in ("{{", "}}", "|"):
+            self.assertNotIn(bad, out)
+
+    def test_stage_formats_snippets_into_paragraphs(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"
+        os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc, stage_campaign as sc, wp_client
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_fmt.jsonl")
+        captured = {}
+        long1 = "Hi A, I saw your work at C. We help brands grow commerce. Could we talk for 20 minutes?"
+        self._write([{"email": "a@x.example", "first_name": "A", "company": "C",
+                      "snippet1": long1, "snippet2": "Short follow up.", "snippet3": "Direct ask?"}])
+        # stage() imports WoodpeckerClient from wp_client at call time, so patch the source method
+        orig = wp_client.WoodpeckerClient.enroll_to_draft
+        def _spy(self, cid, rows):
+            captured.setdefault("rows", []).extend(rows)
+            return {"enrolled": len(rows), "dry_run": True}
+        wp_client.WoodpeckerClient.enroll_to_draft = _spy
+        try:
+            res = sc.stage(self.csv, "779999", commit=False)
+        finally:
+            wp_client.WoodpeckerClient.enroll_to_draft = orig
+        self.assertTrue(res["ok"])
+        self.assertIn("<br><br>", captured["rows"][0]["snippet1"])   # snippet1 got paragraphed at stage time
+
+    def test_body_template_is_readable_and_footer_closed(self):
+        from leadgen import stage_campaign as sc
+        spec = sc._steps_spec(sc.DEFAULT_SUBJECTS, sc.DEFAULT_DELAYS)
+        msg = spec[0]["message"]
+        self.assertIn("line-height", msg)                            # breathing room, not a wall
+        self.assertIn("[REGISTERED POSTAL ADDRESS REQUIRED BEFORE SEND]", msg)  # closing ] present
+        self.assertEqual(msg.count("<div"), msg.count("</div"))      # balanced wrappers
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
