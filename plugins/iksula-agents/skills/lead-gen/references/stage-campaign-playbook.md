@@ -71,8 +71,10 @@ you didn't create.
    `email_account_ids` is `[<mailbox>]`, and there are **3 EMAIL steps**. `GET /rest/v1/prospects?campaigns_id=<id>`
    → the expected count, and `snippet1` is populated on a sample (proves per-prospect copy loaded).
 
-8. **Hand off — the human checklist.** Before anyone presses Run: real **physical postal address** in the footer
-   (replace `[REGISTERED POSTAL ADDRESS…]`), a **warmed** mailbox, a **ramp** (don't blast — `daily_enroll`
+8. **Hand off — the human checklist.** Before anyone presses Run: a real **physical postal address** in the footer
+   (pass `--postal-address "<addr>"`; if omitted the line is dropped and `stage` prints a CAN-SPAM warning — a valid
+   postal address is legally required for US commercial email, so omitting it is a sender's compliance call), a real
+   sender title (`--sender-title`, else `[Title]`), a **warmed** mailbox, a **ramp** (don't blast — `daily_enroll`
    throttles; spread multi-contact companies across days), review the low-confidence copy, send a seed test. Then a
    human presses **Run**. The agent never does.
 
@@ -91,12 +93,25 @@ you didn't create.
 - **COQL** IN-clause limit is **100**; suppression queries run **sequentially**, never in parallel.
 - **Mailbox** must be a warmed **secondary** domain in the allow-list; primary `@iksula.com` is refused by
   construction.
-- **Newlines collapse → wall of text (verified live 1 Jul 2026).** Woodpecker **drops raw `\n` newlines** when it
-  renders a snippet value into the HTML body, so copy that looks nicely paragraphed in the CSV arrives as one
-  unbroken block in the inbox. `stage_campaign.paragraphize` fixes this automatically — it converts the author's
-  blank-line breaks to `<br><br>` and single newlines to `<br>` (and, for a single-blob message with no newlines,
-  segments greeting/body/CTA). Never rely on bare newlines for structure. **Still preview one rendered email on the
-  first campaign** to confirm the `<br>`s render (only the Woodpecker UI shows the final render).
+- **Paragraph breaks must live in the TEMPLATE, not the snippet (verified live 1 Jul 2026 — cost a full debug
+  cycle).** Woodpecker **flattens any HTML inside a snippet VALUE** (a `<br>` you send comes back as `\n`) and then
+  **collapses raw `\n` on render**, so a whole paragraphed message stuffed into one snippet arrives as a single wall.
+  The ONLY thing that renders as paragraphs is real `<p>` tags in the **message** (message HTML is preserved — that's
+  why the signature sits on its own line). So `stage_campaign` **splits each message into paragraphs, puts one `<p>`
+  per paragraph in the template, and fills each `<p>` with its own plain-text snippet** (`_split_body` +
+  `_steps_spec_paragraphed`). Snippet budget is **15**, allocated across the 3 steps (`_allocate_slots`); overflow
+  paragraphs merge into the step's last slot. Do NOT try to `<br>`-format inside a single snippet — it does not
+  survive. (The old `paragraphize` helper is kept for other callers but is NOT how staging formats.)
+- **Re-enroll does NOT refresh an existing prospect's snippets — pass `update: true` (verified live 1 Jul 2026).**
+  Woodpecker prospects are **global**; enrolling one that already exists keeps its OLD custom fields/snippets, so
+  re-staging corrected copy is a silent no-op on anyone already in the pool. `enroll_to_draft` now always sends
+  `update: true` (an upsert scoped to the owned DRAFT — still no send). If you stage, find a formatting bug, fix it,
+  and re-stage, the upsert is what makes the corrected copy actually land.
+- **Snippet-slot labels are account-specific.** `{{SNIPPET_1..15}}` map to this account's snippet slots, which may
+  display odd labels in the editor (e.g. `ZBOUNCE_STATUS`, `PROSPECT_LINKEDIN`). The data still resolves correctly;
+  just confirm those slots aren't fields the account relies on elsewhere before a large run.
+- **Preview one rendered email in the Woodpecker UI on the first campaign — always.** Only the UI shows the true
+  render; the API read is not enough (an API GET shows `\n`, which is ambiguous). Verify before scaling.
 - **One signature, and it must match the sender.** The step template appends **one** signature + the legally
   required postal-address line (Woodpecker auto-appends unsubscribe). So the **copy must be sign-off-free** —
   `stage_campaign.strip_signoff` removes a trailing valediction (`Best,\n<name>` …) so it can't double the

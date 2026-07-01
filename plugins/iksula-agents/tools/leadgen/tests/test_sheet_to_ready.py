@@ -293,12 +293,52 @@ class StageCampaignTests(unittest.TestCase):
             wp_client.WoodpeckerClient.enroll_to_draft = orig
         self.assertNotIn("Rohit", cap["r"][0]["snippet1"])   # copy sign-off stripped before enroll
 
+    def test_strip_subject_line_removes_embedded_subject(self):
+        from leadgen import stage_campaign as sc
+        c = "Subject: Helping Acme Accelerate Commerce\n\nHi Dana,\n\nWe help brands. Free Tuesday?"
+        out = sc.strip_subject_line(c)
+        self.assertFalse(out.lower().startswith("subject"))
+        self.assertTrue(out.startswith("Hi Dana,"))
+        # copy without a subject line is untouched
+        self.assertEqual(sc.strip_subject_line("Hi Dana,\n\nBody."), "Hi Dana,\n\nBody.")
+        # full pipeline in stage(): embedded subject stripped before enroll
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"; os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc, wp_client
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_subj.jsonl")
+        cap = {}
+        orig = wp_client.WoodpeckerClient.enroll_to_draft
+        wp_client.WoodpeckerClient.enroll_to_draft = lambda self, cid, rows: (cap.setdefault("r", []).extend(rows), {"enrolled": len(rows), "dry_run": True})[1]
+        self._write([{"email": "a@x.example", "first_name": "A", "company": "C",
+                      "snippet1": "Subject: Hi there\n\nHi A,\n\nBody. Worth a call?", "snippet2": "s2", "snippet3": "s3"}])
+        try:
+            sc.stage(self.csv, "779999", commit=False, sender_name="Vishal Sobti")
+        finally:
+            wp_client.WoodpeckerClient.enroll_to_draft = orig
+        self.assertNotIn("Subject", cap["r"][0]["snippet1"])
+
     def test_footer_fills_sender_identity(self):
         from leadgen import stage_campaign as sc
         f = sc._footer("Vishal Sobti", "Partnerships")
         self.assertIn("Vishal Sobti, Partnerships", f)
         self.assertNotIn("[Sender Name]", f)
-        self.assertIn("[REGISTERED POSTAL ADDRESS REQUIRED BEFORE SEND]", f)
+
+    def test_footer_postal_address_is_opt_in(self):
+        from leadgen import stage_campaign as sc
+        # default: NO postal-address line (the operator chose to omit it)
+        self.assertNotIn("Iksula &mdash;", sc._footer("V"))
+        self.assertNotIn("REGISTERED POSTAL", sc._footer("V"))
+        # when supplied, it renders
+        f = sc._footer("V", None, "123 Real St, Boston, MA 02110, USA")
+        self.assertIn("123 Real St, Boston, MA 02110, USA", f)
+
+    def test_stage_warns_and_omits_postal_by_default(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"; os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import config as lc, stage_campaign as sc
+        lc.LEDGER_PATH = os.path.join(self.d, "ledger_postal.jsonl")
+        self._write([{"email": "a@x.example", "first_name": "A", "company": "C",
+                      "snippet1": "Hi A,\n\nBody. Call?", "snippet2": "s2", "snippet3": "s3"}])
+        s = sc.stage(self.csv, "779999", commit=False)
+        self.assertFalse(s["has_postal_address"])
 
     def test_paragraphize_is_idempotent_and_safe(self):
         from leadgen import stage_campaign as sc
@@ -311,34 +351,51 @@ class StageCampaignTests(unittest.TestCase):
         for bad in ("{{", "}}", "|"):
             self.assertNotIn(bad, out)
 
-    def test_stage_formats_snippets_into_paragraphs(self):
+    def test_stage_splits_paragraphs_into_separate_snippets(self):
+        # The multi-paragraph message must become ONE snippet per paragraph (NOT <br> inside one
+        # snippet — Woodpecker flattens snippet-internal HTML). The template carries the <p> tags.
         os.environ["WOODPECKER_AGENT_BUILD"] = "on"
         os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
         from leadgen import config as lc, stage_campaign as sc, wp_client
         lc.LEDGER_PATH = os.path.join(self.d, "ledger_fmt.jsonl")
         captured = {}
-        long1 = "Hi A, I saw your work at C. We help brands grow commerce. Could we talk for 20 minutes?"
+        m1 = "Hi A,\n\nI saw your work at C.\n\nWe help brands grow commerce.\n\nCould we talk 20 min?"
         self._write([{"email": "a@x.example", "first_name": "A", "company": "C",
-                      "snippet1": long1, "snippet2": "Short follow up.", "snippet3": "Direct ask?"}])
-        # stage() imports WoodpeckerClient from wp_client at call time, so patch the source method
+                      "snippet1": m1, "snippet2": "Follow up para one.\n\nPara two.", "snippet3": "Direct ask?"}])
         orig = wp_client.WoodpeckerClient.enroll_to_draft
-        def _spy(self, cid, rows):
-            captured.setdefault("rows", []).extend(rows)
-            return {"enrolled": len(rows), "dry_run": True}
-        wp_client.WoodpeckerClient.enroll_to_draft = _spy
+        wp_client.WoodpeckerClient.enroll_to_draft = lambda self, cid, rows: (captured.setdefault("rows", []).extend(rows), {"enrolled": len(rows), "dry_run": True})[1]
         try:
             res = sc.stage(self.csv, "779999", commit=False)
         finally:
             wp_client.WoodpeckerClient.enroll_to_draft = orig
         self.assertTrue(res["ok"])
-        self.assertIn("<br><br>", captured["rows"][0]["snippet1"])   # snippet1 got paragraphed at stage time
+        row = captured["rows"][0]
+        self.assertEqual(row["snippet1"], "Hi A,")                 # 1st paragraph = its own snippet
+        self.assertEqual(row["snippet2"], "I saw your work at C.")  # 2nd paragraph = next snippet
+        for k, v in row.items():                                   # NO <br> anywhere in a snippet value
+            if k.startswith("snippet"):
+                self.assertNotIn("<br", v.lower())
+        self.assertEqual(res["slots"], [4, 2, 1])                  # step1=4 paras, step2=2, step3=1
+
+    def test_steps_spec_paragraphed_builds_p_per_slot(self):
+        from leadgen import stage_campaign as sc
+        spec = sc._steps_spec_paragraphed(sc.DEFAULT_SUBJECTS, sc.DEFAULT_DELAYS, [3, 2, 1], sc._footer("V"))
+        self.assertEqual(spec[0]["message"].count("<p>{{SNIPPET_"), 3)   # step1: 3 paragraph <p>s
+        self.assertIn('{{SNIPPET_1 | " "}}', spec[0]["message"])         # global numbering, verified syntax
+        self.assertIn('{{SNIPPET_4 | " "}}', spec[1]["message"])         # step2 starts at snippet4
+        self.assertIn('{{SNIPPET_6 | " "}}', spec[2]["message"])         # step3 starts at snippet6
+
+    def test_allocate_slots_respects_15_budget(self):
+        from leadgen import stage_campaign as sc
+        self.assertEqual(sc._allocate_slots([5, 6, 5]), [5, 5, 5])   # 16 -> trim largest to fit 15
+        self.assertEqual(sum(sc._allocate_slots([9, 9, 9])), 15)     # never exceeds the 15 budget
+        self.assertEqual(sc._allocate_slots([2, 1, 3]), [2, 1, 3])   # under budget -> unchanged
 
     def test_body_template_is_readable_and_footer_closed(self):
         from leadgen import stage_campaign as sc
         spec = sc._steps_spec(sc.DEFAULT_SUBJECTS, sc.DEFAULT_DELAYS)
         msg = spec[0]["message"]
         self.assertIn("line-height", msg)                            # breathing room, not a wall
-        self.assertIn("[REGISTERED POSTAL ADDRESS REQUIRED BEFORE SEND]", msg)  # closing ] present
         self.assertEqual(msg.count("<div"), msg.count("</div"))      # balanced wrappers
 
 

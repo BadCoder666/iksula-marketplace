@@ -205,7 +205,11 @@ class WoodpeckerClient:
         if self.dry_run:
             return {"enrolled": len(prospects), "dry_run": True}
         cid = int(campaign_id) if str(campaign_id).strip().isdigit() else campaign_id
-        body = {"campaign": {"campaign_id": cid}, "prospects": [self._prospect(p) for p in prospects]}
+        # update:true makes the enroll an UPSERT — without it Woodpecker keeps a pre-existing
+        # (global) prospect's OLD custom fields/snippets, so re-staging corrected copy would be a
+        # no-op on anyone already in the pool. It still cannot send (no /run) and stays scoped to
+        # this owned DRAFT; it only refreshes the prospect fields we supply.
+        body = {"update": True, "campaign": {"campaign_id": cid}, "prospects": [self._prospect(p) for p in prospects]}
         status, raw = self._http("POST", config.WP_ADD_PROSPECTS_PATH, body)
         if status not in (200, 201):
             raise WoodpeckerError("add_prospects returned HTTP %s" % status)
