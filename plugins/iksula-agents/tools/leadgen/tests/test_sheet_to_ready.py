@@ -322,6 +322,21 @@ class StageCampaignTests(unittest.TestCase):
         self.assertIn("Vishal Sobti, Partnerships", f)
         self.assertNotIn("[Sender Name]", f)
 
+    def test_footer_empty_by_default_uses_account_signature(self):
+        from leadgen import stage_campaign as sc
+        # no args -> EMPTY footer: the email relies on the sending mailbox's own account signature
+        self.assertEqual(sc._footer(), "")
+        self.assertEqual(sc._footer(None, None, None), "")
+        # opt-in still works when a mailbox has no account signature
+        self.assertIn("Vishal Sobti", sc._footer("Vishal Sobti"))
+
+    def test_stage_no_hardcoded_signature_by_default(self):
+        os.environ["WOODPECKER_AGENT_BUILD"] = "on"; os.environ["WOODPECKER_ALLOWED_MAILBOX_IDS"] = "779999"
+        from leadgen import stage_campaign as sc
+        spec = sc._steps_spec_paragraphed(sc.DEFAULT_SUBJECTS, sc.DEFAULT_DELAYS, [2, 1, 1], sc._footer())
+        self.assertNotIn("iksula.com</a>", spec[0]["message"])   # no hard-coded signature block
+        self.assertTrue(spec[0]["message"].rstrip().endswith("</div>"))
+
     def test_footer_postal_address_is_opt_in(self):
         from leadgen import stage_campaign as sc
         # default: NO postal-address line (the operator chose to omit it)

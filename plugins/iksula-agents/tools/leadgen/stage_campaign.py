@@ -36,17 +36,24 @@ DEFAULT_SUBJECTS = (
 DEFAULT_DELAYS = (3, 4, 1)   # days to the next step (last is ignored)
 
 
-def _footer(sender_name="[Sender Name]", sender_title="[Title]", postal_address=None):
-    """The uniform signature appended after each personalized body. The copy itself is stripped of
-    its own sign-off (see strip_signoff) so this is the ONE signature. Woodpecker auto-appends the
-    unsubscribe link (gdpr_unsubscribe).
+def _footer(sender_name=None, sender_title=None, postal_address=None):
+    """Optional hard-coded footer. **By default this is EMPTY** — Woodpecker auto-appends the
+    SENDING mailbox's own account signature (name/title/company/postal address), so a hard-coded
+    signature here just DUPLICATES it and shows the WRONG name whenever the send mailbox differs
+    from the one staged (e.g. staged as Vishal, sent from Sam). The copy's own sign-off is already
+    stripped (see strip_signoff), so leaving this empty yields: clean paragraphs → the real
+    sender's signature.
 
-    postal_address: a valid physical postal address is a CAN-SPAM REQUIREMENT for US commercial
-    email. If given, it renders as the address line; if None, the line is omitted — which is NOT
-    CAN-SPAM compliant, so `stage`/`main` warn when it's absent."""
-    sig = sender_name + ((", " + sender_title) if sender_title else "")
-    footer = ('<p style="margin:18px 0 0 0">--<br>%s<br>'
-              'Iksula | <a href="https://www.iksula.com">iksula.com</a></p>') % sig
+    Only pass `sender_name` / `postal_address` when the sending mailbox has **no** account
+    signature configured. If given, `postal_address` is a CAN-SPAM requirement for US commercial
+    email; note a configured account signature that includes a physical address already satisfies it."""
+    if not (sender_name or postal_address):
+        return ""
+    footer = ""
+    if sender_name:
+        sig = sender_name + ((", " + sender_title) if sender_title else "")
+        footer += ('<p style="margin:18px 0 0 0">--<br>%s<br>'
+                   'Iksula | <a href="https://www.iksula.com">iksula.com</a></p>') % sig
     if postal_address:
         footer += ('<p style="font-size:11px;color:#888888;margin:10px 0 0 0">Iksula &mdash; %s</p>'
                    % postal_address)
@@ -280,7 +287,7 @@ def stage(recipients_csv, mailbox, name=None, commit=False, timezone="US/Eastern
     run_id = uuid.uuid4().hex[:8]
     name = name or ("[LG-AGENT] CFO 3-step " + run_id)
     created = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    footer = _footer(sender_name or "[Sender Name]", sender_title or "[Title]", postal_address)
+    footer = _footer(sender_name, sender_title, postal_address)
     draft = s2r.build_sequence_draft(name, str(mailbox),
                                      _steps_spec_paragraphed(subjects, delays, slots, footer),
                                      run_id=run_id, created_at_utc=created, dry_run=dry,
@@ -329,11 +336,12 @@ def main(argv=None):
         for i, e, why in s["problems"]:
             print("  row %d (%s): %s" % (i, e, why))
     if not s.get("has_postal_address"):
-        print("\nWARNING: no --postal-address set, so the footer has NO physical postal address. A valid postal")
-        print("address is a CAN-SPAM requirement for US commercial email; sending without one is non-compliant.")
-    print("\nNEXT (human): open the draft in Woodpecker, send a test to yourself, confirm the unsubscribe link,")
-    print("then press Run on a warmed mailbox in a ramp. The agent does NOT send. This path checks data hygiene")
-    print("only — you own lawful basis, the postal address, and unsubscribe.")
+        print("\nNOTE: no hard-coded footer — the email relies on the SENDING MAILBOX's own account signature,")
+        print("which Woodpecker auto-appends. Confirm that signature includes the sender's name AND a physical")
+        print("postal address (CAN-SPAM requires the address for US commercial email).")
+    print("\nNEXT (human): open the draft in Woodpecker, send a test to yourself, confirm the signature + the")
+    print("unsubscribe link render, then press Run on a warmed mailbox in a ramp. The agent does NOT send. You")
+    print("own lawful basis, the sender's account signature (name + postal address), and unsubscribe.")
     return 0
 
 
